@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>AllEnabledByDefault</AnalysisMode>
+
+    <PackageId>AarxMaps.Places</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Aarexus Software</Authors>
+    <Company>Aarexus Software</Company>
+
+    <Description>.NET SDK for the Google Maps Places API (New). Provides strongly-typed access to place search, details, autocomplete, and photos, with built-in dependency injection support for ASP.NET Core applications.</Description>
+    <PackageTags>google-maps;googlemaps;places-api;google-places;dotnet;aspnetcore;sdk;api-client;autocomplete;details;search;geolocation;location;mapping</PackageTags>
+
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Aarexus/AarxMaps</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Aarexus/AarxMaps</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\AarxMaps.Core\AarxMaps.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.3" />
+  </ItemGroup>
+
+</Project>

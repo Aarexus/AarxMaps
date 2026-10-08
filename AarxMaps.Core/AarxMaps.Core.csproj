@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>AllEnabledByDefault</AnalysisMode>
+
+    <PackageId>AarxMaps.Core</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Aarexus Software</Authors>
+    <Company>Aarexus Software</Company>
+
+    <Description>Core library for AarxMaps, a .NET SDK for Google Maps APIs. Provides shared HTTP infrastructure, dependency injection integration, and core abstractions used by feature modules like Places and Routes.</Description>
+    <PackageTags>google-maps;googlemaps;maps-api;dotnet;aspnetcore;sdk;api-client;httpclient;dependency-injection;geospatial;location;mapping</PackageTags>
+
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Aarexus/AarxMaps</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Aarexus/AarxMaps</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.3" />
+  </ItemGroup>
+
+</Project>

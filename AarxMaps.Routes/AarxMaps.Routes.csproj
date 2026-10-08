@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>AllEnabledByDefault</AnalysisMode>
+
+    <PackageId>AarxMaps.Routes</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Aarexus Software</Authors>
+    <Company>Aarexus Software</Company>
+
+    <Description>.NET SDK for the Google Maps Routes API. Provides strongly-typed access to Compute Routes and Route Matrix (Distance Matrix), with built-in dependency injection support for ASP.NET Core applications.</Description>
+    <PackageTags>google-maps;googlemaps;routes-api;google-routes;directions-api;distance-matrix;route-matrix;dotnet;aspnetcore;sdk;api-client;routing;geolocation;location;mapping</PackageTags>
+
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Aarexus/AarxMaps</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Aarexus/AarxMaps</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AarxMaps.Core\AarxMaps.Core.csproj" />
+  </ItemGroup>
+
+</Project>
