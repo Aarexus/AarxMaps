@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace AarxMaps.Core.Exceptions;
 
 /// <summary>
@@ -11,24 +13,18 @@ public class MapsRateLimitException : MapsApiException {
     private const string DefaultMessage = "The Google Maps API rate limit has been exceeded.";
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="MapsRateLimitException"/> class.
+    /// Gets how long must wait before making a follow-up request, if available.
     /// </summary>
-    /// <param name="message">
-    /// The exception message. If not provided, a default rate limit message will be used.
-    /// </param>
-    /// <param name="status">
-    /// The status returned by the Maps API.
-    /// </param>
-    /// <param name="raw">
-    /// The raw response returned by the Maps API.
-    /// </param>
-    /// <param name="inner">
-    /// The inner exception that caused this exception.
-    /// </param>
+    public TimeSpan? RetryAfter { get; }
+
     public MapsRateLimitException(
         string? message = null,
-        string? status = null,
-        string? raw = null,
+        HttpStatusCode? status = null,
+        string? response = null,
+        TimeSpan? retryAfter = null,
         Exception? inner = null
-    ) : base(message ?? DefaultMessage, status, raw, inner) { }
+    ) : base(message ?? DefaultMessage, status, response, inner)
+    {
+        RetryAfter = retryAfter;
+    }
 }

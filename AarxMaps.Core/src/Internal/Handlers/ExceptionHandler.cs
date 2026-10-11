@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 using AarxMaps.Core.Exceptions;
 
@@ -16,15 +17,23 @@ internal static class ExceptionHandler {
 
         throw status switch {
             HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden
-                => new MapsApiAuthException(message, status.ToString(), body),
+                => new MapsApiAuthException(message, status, body),
             HttpStatusCode.TooManyRequests
-                => new MapsRateLimitException(message, status.ToString(), body),
+                => new MapsRateLimitException(message, status, body, GetRetryAfter(response.Headers.RetryAfter)),
             HttpStatusCode.NotFound
-                => new MapsNotFoundException(message, status.ToString(), body),
+                => new MapsNotFoundException(message, status, body),
             HttpStatusCode.BadRequest
-                => new MapsInvalidRequestException(message, status.ToString(), body),
-            _ => new MapsApiException(message, status.ToString(), body)
+                => new MapsInvalidRequestException(message, status, body),
+            _ => new MapsApiException(message, status, body)
         };
+    }
+
+    // INNER METHS
+    private static TimeSpan? GetRetryAfter(RetryConditionHeaderValue? retry) {
+        if (retry is null) return null;
+        if (retry.Delta is { } delta) return delta;
+        if (retry.Date is { } date) return date - DateTimeOffset.UtcNow;
+        return null;
     }
 
     private static async Task<string?> ReadBoundedBodyAsync(HttpResponseMessage response, CancellationToken ct) {

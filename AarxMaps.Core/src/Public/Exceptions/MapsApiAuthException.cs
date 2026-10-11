@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace AarxMaps.Core.Exceptions;
 
 /// <summary>
@@ -11,25 +13,10 @@ namespace AarxMaps.Core.Exceptions;
 public class MapsApiAuthException : MapsApiException {
     private const string DefaultMessage = "The provided API Key is invalid or lacks required permissions.";
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MapsApiAuthException"/> class.
-    /// </summary>
-    /// <param name="message">
-    /// The exception message. If not provided, a default authentication error message will be used.
-    /// </param>
-    /// <param name="status">
-    /// The status returned by the Maps API.
-    /// </param>
-    /// <param name="raw">
-    /// The raw response returned by the Maps API.
-    /// </param>
-    /// <param name="inner">
-    /// The inner exception that caused this exception.
-    /// </param>
     public MapsApiAuthException(
         string? message = null,
-        string? status = null,
-        string? raw = null,
+        HttpStatusCode? status = null,
+        string? response = null,
         Exception? inner = null
-    ) : base(message ?? DefaultMessage, status, raw, inner) { }
+    ) : base(message ?? DefaultMessage, status, response, inner) { }
 }

@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace AarxMaps.Core.Exceptions;
 
 /// <summary>
@@ -14,7 +16,7 @@ public class MapsApiException : Exception {
     /// <summary>
     /// Gets the status code returned by the Maps API, if available.
     /// </summary>
-    public string? Status { get; }
+    public HttpStatusCode? StatusCode { get; }
 
     /// <summary>
     /// Gets the raw response returned by the Maps API.
@@ -23,32 +25,17 @@ public class MapsApiException : Exception {
     /// This value may contain the original JSON payload returned by the API,
     /// which can be useful for debugging purposes.
     /// </remarks>
-    public string? RawResponse { get; }
+    public string? ResponseBody { get; }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MapsApiException"/> class.
-    /// </summary>
-    /// <param name="message">
-    /// The exception message. If not provided, a default message will be used.
-    /// </param>
-    /// <param name="status">
-    /// The status returned by the Maps API.
-    /// </param>
-    /// <param name="rawResponse">
-    /// The raw response returned by the Maps API.
-    /// </param>
-    /// <param name="inner">
-    /// The inner exception that caused this exception.
-    /// </param>
     public MapsApiException(
         string? message = null,
-        string? status = null,
-        string? rawResponse = null,
+        HttpStatusCode? status = null,
+        string? response = null,
         Exception? inner = null)
         : base(message ?? DefaultMessage, inner)
     {
-        Status = status;
-        RawResponse = rawResponse;
+        StatusCode = status;
+        ResponseBody = response;
     }
 
     /// <summary>
@@ -57,7 +44,7 @@ public class MapsApiException : Exception {
     /// </summary>
     public override string ToString()
         => $"{GetType().Name}: {Message}\n" +
-           (Status is not null ? $"Status: {Status}\n" : "") +
-           (RawResponse is not null ? $"Raw: {RawResponse}\n" : "") +
+           (StatusCode is not null ? $"StatusCode: {StatusCode}\n" : "") +
+           (ResponseBody is not null ? $"ResponseBody: {ResponseBody}\n" : "") +
            base.ToString();
 }

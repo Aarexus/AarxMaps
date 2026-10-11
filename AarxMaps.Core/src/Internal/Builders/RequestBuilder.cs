@@ -1,11 +1,12 @@
 using System.Net.Http.Json;
+using AarxMaps.Core.Internal.Json;
 
 namespace AarxMaps.Core.Internal.Builders;
 
 internal sealed class RequestBuilder {
     // -------------------- INIT --------------------
     private HttpMethod _method = HttpMethod.Get;
-    private readonly Dictionary<string, string> _headers = [];
+    private readonly Dictionary<string, string> _headers = new (StringComparer.OrdinalIgnoreCase);
     private object? _payload;
     private readonly MapsUriBuilder _uriBuilder = new();
     
@@ -20,7 +21,7 @@ internal sealed class RequestBuilder {
             request.Headers.TryAddWithoutValidation(item.Key, item.Value);
 
         if (_payload is not null)
-            request.Content = JsonContent.Create(_payload);
+            request.Content = JsonContent.Create(_payload, options: MapsJsonOptions.Default);
 
         return request;
     }
