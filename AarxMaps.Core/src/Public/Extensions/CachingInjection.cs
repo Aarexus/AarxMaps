@@ -137,7 +137,7 @@ public static partial class DependencyInjection {
         services.AddSingleton<ICacheKeyStrategy, RequestFingerprintCacheKeyStrategy>();
 
         // SERVICES
-        services.AddSingleton<IMapsApiClient, CacheMapsApiClient>();
+        services.AddTransient<IMapsApiClient, CacheMapsApiClient>();
         services.AddSingleton<MapsCachingMarker>();
     }
     

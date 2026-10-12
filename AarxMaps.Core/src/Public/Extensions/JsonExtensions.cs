@@ -14,6 +14,12 @@ namespace AarxMaps.Core.Extensions;
 /// without repetitive checks for property existence or <see cref="JsonValueKind"/> validation.
 /// </remarks>
 public static class JsonExtensions {
+    // INNER HELPER
+    private static bool TryGet(this JsonElement e, string prop, out JsonElement value) {
+        value = default;
+        return e.ValueKind == JsonValueKind.Object && e.TryGetProperty(prop, out value);
+    }
+
     /// <summary>
     /// Attempts to retrieve a JSON object property from the specified element.
     /// </summary>
@@ -24,7 +30,7 @@ public static class JsonExtensions {
     /// <see cref="JsonValueKind.Object"/>; otherwise <c>null</c>.
     /// </returns>
     public static JsonElement? GetObject(this JsonElement element, string prop) 
-        => element.TryGetProperty(prop, out var value) && value.ValueKind == JsonValueKind.Object
+        => element.TryGet(prop, out var value) && value.ValueKind == JsonValueKind.Object
             ? value : null;
     
     /// <summary>
@@ -36,8 +42,8 @@ public static class JsonExtensions {
     /// The integer value if the property exists and is a number; otherwise <c>null</c>.
     /// </returns>
     public static int? GetInt(this JsonElement element, string prop)
-        => element.TryGetProperty(prop, out var value) && value.ValueKind == JsonValueKind.Number
-            ? value.GetInt32() : null;
+        => element.TryGet(prop, out var value) && value.ValueKind == JsonValueKind.Number
+            ? (value.TryGetInt32(out var i) ? i : null ) : null;
     
     /// <summary>
     /// Attempts to retrieve a single-precision floating-point value from the specified JSON element.
@@ -48,7 +54,7 @@ public static class JsonExtensions {
     /// The <see cref="float"/> value if the property exists and is a number; otherwise <c>null</c>.
     /// </returns>
     public static float? GetFloat(this JsonElement element, string prop)
-        => element.TryGetProperty(prop, out var value) && value.ValueKind == JsonValueKind.Number
+        => element.TryGet(prop, out var value) && value.ValueKind == JsonValueKind.Number
             ? value.GetSingle() : null;
     
     /// <summary>
@@ -60,7 +66,7 @@ public static class JsonExtensions {
     /// The <see cref="double"/> value if the property exists and is a number; otherwise <c>null</c>.
     /// </returns>
     public static double? GetDoubleValue(this JsonElement element, string prop)
-        => element.TryGetProperty(prop, out var value) && value.ValueKind == JsonValueKind.Number
+        => element.TryGet(prop, out var value) && value.ValueKind == JsonValueKind.Number
             ? value.GetDouble() : null;
     
     /// <summary>
@@ -73,7 +79,7 @@ public static class JsonExtensions {
     /// or <see cref="JsonValueKind.False"/>; otherwise <c>null</c>.
     /// </returns>
     public static bool? GetBool(this JsonElement element, string prop)
-        => element.TryGetProperty(prop, out var value) &&
+        => element.TryGet(prop, out var value) &&
                 (value.ValueKind == JsonValueKind.False || value.ValueKind == JsonValueKind.True)
             ? value.GetBoolean() : null;
     
@@ -87,7 +93,7 @@ public static class JsonExtensions {
     /// otherwise <c>null</c>.
     /// </returns>
     public static string? GetStringValue(this JsonElement element, string prop)
-        => element.TryGetProperty(prop, out var value) && value.ValueKind == JsonValueKind.String
+        => element.TryGet(prop, out var value) && value.ValueKind == JsonValueKind.String
             ? value.GetString() : null;
     
     /// <summary>
@@ -100,7 +106,7 @@ public static class JsonExtensions {
     /// and is of type <see cref="JsonValueKind.Array"/>; otherwise an empty sequence.
     /// </returns>
     public static JsonElement.ArrayEnumerator GetArray(this JsonElement element, string prop)
-        => element.TryGetProperty(prop, out var value) && value.ValueKind == JsonValueKind.Array
+        => element.TryGet(prop, out var value) && value.ValueKind == JsonValueKind.Array
             ? value.EnumerateArray() : default;
     
     /// <summary>
@@ -113,9 +119,18 @@ public static class JsonExtensions {
     /// from the specified array property; otherwise, an empty list if the property is missing,
     /// not an array, or contains no valid string values.
     /// </returns>
-    public static IReadOnlyList<string> GetArrayStringValues(this JsonElement json, string prop)
-        => [.. json.GetArray(prop)
-            .Select(s => s.GetString())
-            .Where(s => !string.IsNullOrWhiteSpace(s))
-            .Select(s => s!) ];
+    public static IReadOnlyList<string> GetArrayStringValues(this JsonElement json, string prop) {
+        if (!json.TryGet(prop, out var value) || value.ValueKind != JsonValueKind.Array)
+            return [];
+
+        var strings = new List<string>(value.GetArrayLength());
+        foreach (var e in value.EnumerateArray()) {
+            if (e.ValueKind != JsonValueKind.String) 
+                continue;
+            var s = e.GetString();
+            if (!string.IsNullOrWhiteSpace(s)) 
+                strings.Add(s);
+        }
+        return strings;
+    }
 }

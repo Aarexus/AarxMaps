@@ -68,6 +68,9 @@ public static class MapsApiClientExtensions {
                 hasNext = await enumerator.MoveNextAsync().ConfigureAwait(false);
             }
             catch (IOException ex) {
+                if (ct.IsCancellationRequested)
+                    throw new OperationCanceledException("The enumeration was cancelled.", ex, ct);
+
                 throw new MapsApiException("The Maps API stream was interrupted.", inner: ex);
             }
 

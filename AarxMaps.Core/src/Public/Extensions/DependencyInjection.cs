@@ -3,7 +3,6 @@ using AarxMaps.Core.Internal.Http;
 using AarxMaps.Core.Abstractions;
 using AarxMaps.Core.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using AarxMaps.Core.Exceptions;
 using AarxMaps.Core.Internal;
 using Microsoft.Extensions.Options;
 using AarxMaps.Core.Internal.Constants;

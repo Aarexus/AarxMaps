@@ -37,9 +37,11 @@ internal sealed class RequestFingerprintCacheKeyStrategy : ICacheKeyStrategy {
                 writer.WriteString("endpoint", request.Endpoint.Trim());
                 writer.WriteString("method", request.Method.Method.ToUpperInvariant());
                 WriteMap(writer, "headers", request.Headers,
-                    include: k => AllowedHeaders.Contains(k), ignoreCase: true);
+                    include: k => AllowedHeaders.Contains(k), 
+                    ignoreCase: true, trim: true);
                 WriteMap(writer, "query", request.Query,
-                    include: k => !ExcludedQueryParameters.Contains(k), ignoreCase: false);
+                    include: k => !ExcludedQueryParameters.Contains(k), 
+                    ignoreCase: false, trim: false);
                 WritePayload(writer, request.Payload);
                 writer.WriteEndObject();
             }
@@ -53,19 +55,21 @@ internal sealed class RequestFingerprintCacheKeyStrategy : ICacheKeyStrategy {
     }
 
     // -------------------- INNER METHS --------------------
-     private static void WriteMap(
+    private static void WriteMap(
         Utf8JsonWriter w, string name, IDictionary<string, string>? dict,
-        Func<string, bool> include, bool ignoreCase
+        Func<string, bool> include, bool ignoreCase, bool trim
     ) {
         w.WritePropertyName(name);
         w.WriteStartObject();
 
         if (dict is not null) {
+            string Norm(string s) => trim ? s.Trim() : s;
+
             var entries = dict
-                .Where(kv => include(kv.Key))
                 .Select(kv => (
-                    Key: ignoreCase ? kv.Key.Trim().ToLowerInvariant() : kv.Key.Trim(),
-                    Value: kv.Value?.Trim() ?? string.Empty))
+                    Key: ignoreCase ? Norm(kv.Key).ToLowerInvariant() : Norm(kv.Key),
+                    Value: Norm(kv.Value ?? string.Empty)))
+                .Where(e => include(e.Key))
                 .OrderBy(e => e.Key, StringComparer.Ordinal);
 
             foreach (var (key, value) in entries)
