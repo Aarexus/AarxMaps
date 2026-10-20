@@ -32,6 +32,11 @@ public interface IMapsApiClient {
     /// <para>
     /// Implementations may serve this call from a cache (for example a caching decorator).
     /// </para>
+    /// <para>
+    /// <b>Ownership:</b> when <typeparamref name="T"/> is <see cref="System.Text.Json.JsonDocument"/>,
+    /// the caller owns the returned document and must dispose it. Caching decorators return a new
+    /// document on every call, so disposing it never affects the cache.
+    /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="apiRequest"/> is <c>null</c>.</exception>
     /// <exception cref="MapsApiAuthException">The API responded 401 or 403.</exception>
