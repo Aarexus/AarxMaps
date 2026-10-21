@@ -55,7 +55,7 @@ Places and Routes reference Core via `ProjectReference`. They never talk to `Htt
 Each project splits `src/` into:
 
 - `src/Public/` - the consumer-facing API. **The namespace drops the `Public` segment**: `src/Public/Models/MapsApiRequest.cs` -> `AarxMaps.Core.Models`.
-- **Feature folders (Places):** `src/Public/Services/<Feature>/{Builders,Models,Requests}` all share one flat namespace, `AarxMaps.Places.<Feature>` (e.g. `AarxMaps.Places.Autocomplete`). The matching internals live in `src/Internal/Services/<Feature>/`, with wire DTOs under `DTOs/`.
+- **Feature folders (Places):** `src/Public/Services/<Feature>/{Builders,Models,Requests}` all share one flat namespace, `AarxMaps.Places.Services.<Feature>` (e.g. `AarxMaps.Places.Services.Searching`); subfolders don't add namespace segments. The matching internals live in `src/Internal/Services/<Feature>/` (`<Feature>Service`, `<Feature>Factory`, `<Feature>Mapper`), with wire DTOs under `DTOs/`. Shared geometry (`GeoCircle`, `GeoRectangle`, `LocationBias`, `LocationRestriction`) lives in `src/Public/Common/Models` (`AarxMaps.Places.Common.Models.Geometry`).
 - `src/Internal/` - implementation. Namespace keeps `Internal` (`AarxMaps.Core.Internal.Http`) and every type is `internal`.
 - `src/InternalsVisibleTo.cs` - exposes internals to `AarxMaps.Tests` and `DynamicProxyGenAssembly2` (NSubstitute).
 
@@ -86,7 +86,7 @@ Module services are `internal` classes registered as transient behind public int
 
 ## Module conventions (Places / Routes)
 
-- Google's wire format lives in `Internal/Models/DTOs` and `Internal/Models/Responses`. Mappers (`Internal/Mappers` or `Internal/Mapping`) convert to public models. Public models never carry `[JsonPropertyName]` for Google's schema unless they are serialized directly.
+- Google's response wire format lives in internal DTOs (`Internal/Services/<Feature>/DTOs` in Places). Mappers convert them to public models and copy collections, since cached DTOs are shared. Public request models may be serialized directly as the payload when their shape matches Google's; public models never carry `[JsonPropertyName]` for Google's schema unless they are serialized directly.
 - Endpoint constants live in `Internal/Constants/<Module>Endpoints.cs`.
 - Public request models have `internal` setters and are built through fluent builders (`RouteRequestBuilder`, `NearbyRequestBuilder`, ...).
 - Every public async method takes a `CancellationToken ct` and passes it to `IMapsApiClient`.
