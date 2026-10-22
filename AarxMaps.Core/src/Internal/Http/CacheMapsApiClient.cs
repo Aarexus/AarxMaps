@@ -37,6 +37,9 @@ internal sealed partial class CacheMapsApiClient : IMapsApiClient {
 
     // -------------------- METHS --------------------
     public async Task<T> SendAsync<T>(MapsApiRequest apiRequest, CancellationToken ct) {
+        if (!apiRequest.Cacheable)
+            return await _client.SendAsync<T>(apiRequest, ct).ConfigureAwait(false);
+
         if (typeof(T) == typeof(JsonDocument))
             return (T)(object)await SendJsonDocumentAsync(apiRequest, ct).ConfigureAwait(false);
 

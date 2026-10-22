@@ -3,6 +3,7 @@ using AarxMaps.Core.Models.Geometry;
 using AarxMaps.Places.Common.Models.Geometry;
 using AarxMaps.Places.Internal.Constants;
 using AarxMaps.Places.Internal.Factories;
+using AarxMaps.Places.Internal.Validation;
 
 namespace AarxMaps.Places.Services.Searching;
 
@@ -63,11 +64,7 @@ public sealed class TextRequestBuilder {
     /// Thrown when the query is null, empty, or whitespace.
     /// </exception>
     public TextRequestBuilder WithTextQuery(string textQuery) {
-        var trimmed = textQuery?.Trim();
-        if (string.IsNullOrWhiteSpace(trimmed))
-            throw new MapsInvalidRequestException("Empty TextQuery is not allowed.");
-
-        _textQuery = trimmed;
+        _textQuery = RequestValidator.ValidateAndTrimRequiredText(textQuery, "TextQuery");
         return this;
     }
 
@@ -85,11 +82,7 @@ public sealed class TextRequestBuilder {
     /// Thrown when the type is null, empty, or whitespace.
     /// </exception>
     public TextRequestBuilder WithIncludedType(string includedType) {
-        var trimmed = includedType?.Trim();
-        if (string.IsNullOrWhiteSpace(trimmed))
-            throw new MapsInvalidRequestException("Empty IncludedType is not allowed.");
-
-        _includedType = trimmed;
+        _includedType = RequestValidator.ValidateAndTrimRequiredText(includedType, "IncludedType");
         return this;
     }
 
@@ -128,10 +121,7 @@ public sealed class TextRequestBuilder {
     /// Thrown when the token is null, empty, or whitespace.
     /// </exception>
     public TextRequestBuilder WithPageToken(string pageToken) {
-        if (string.IsNullOrWhiteSpace(pageToken))
-            throw new MapsInvalidRequestException("Empty PageToken is not allowed.");
-
-        _pageToken = pageToken;
+        _pageToken = RequestValidator.ValidateAndTrimRequiredText(pageToken, "PageToken");
         return this;
     }
 

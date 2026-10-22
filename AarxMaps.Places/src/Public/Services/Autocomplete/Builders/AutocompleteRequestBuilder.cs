@@ -2,6 +2,7 @@ using AarxMaps.Core.Exceptions;
 using AarxMaps.Core.Models.Geometry;
 using AarxMaps.Places.Common.Models.Geometry;
 using AarxMaps.Places.Internal.Factories;
+using AarxMaps.Places.Internal.Validation;
 
 namespace AarxMaps.Places.Services.Autocomplete;
 
@@ -15,7 +16,6 @@ namespace AarxMaps.Places.Services.Autocomplete;
 public sealed class AutocompleteRequestBuilder {
     // -------------------- INIT --------------------
     private const int MaxPrimaryTypes = 5;
-    private const int MaxSessionTokenLength = 36;
 
     private string? _input;
     private IReadOnlyList<string>? _includedPrimTypes;
@@ -61,11 +61,7 @@ public sealed class AutocompleteRequestBuilder {
     /// Thrown when the input is null, empty, or whitespace.
     /// </exception>
     public AutocompleteRequestBuilder WithInput(string input) {
-        var trimmed = input?.Trim();
-        if (string.IsNullOrWhiteSpace(trimmed))
-            throw new MapsInvalidRequestException("Empty input is not allowed.");
-
-        _input = trimmed;
+        _input = RequestValidator.ValidateAndTrimRequiredText(input, "Input");
         return this;
     }
 
@@ -171,12 +167,7 @@ public sealed class AutocompleteRequestBuilder {
     /// other than <c>A-Z</c>, <c>a-z</c>, <c>0-9</c>, <c>-</c> and <c>_</c>.
     /// </exception>
     public AutocompleteRequestBuilder WithSessionToken(string sessionToken) {
-        if (string.IsNullOrEmpty(sessionToken) || sessionToken.Length > MaxSessionTokenLength)
-            throw new MapsInvalidRequestException($"SessionToken must be between 1 and {MaxSessionTokenLength} characters.");
-        if (!sessionToken.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_'))
-            throw new MapsInvalidRequestException("SessionToken must be URL- and filename-safe base64 (A-Z, a-z, 0-9, '-', '_').");
-
-        _sessionToken = sessionToken;
+        _sessionToken = RequestValidator.ValidateSessionToken(sessionToken);
         return this;
     }
 }

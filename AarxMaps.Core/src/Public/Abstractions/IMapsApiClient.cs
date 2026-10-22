@@ -30,7 +30,8 @@ public interface IMapsApiClient {
     /// The body is fully buffered before deserialization. The underlying HTTP response is
     /// owned and disposed by the implementation on every path, so the caller has nothing to release.
     /// <para>
-    /// Implementations may serve this call from a cache (for example a caching decorator).
+    /// Implementations may serve this call from a cache (for example a caching decorator),
+    /// unless <see cref="MapsApiRequest.Cacheable"/> is <c>false</c>.
     /// </para>
     /// <para>
     /// <b>Ownership:</b> when <typeparamref name="T"/> is <see cref="System.Text.Json.JsonDocument"/>,
