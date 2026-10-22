@@ -142,5 +142,7 @@ internal static class DetailsMapper {
     }
 
     private static Uri? ToUri(string? value)
-        => Uri.TryCreate(value, UriKind.Absolute, out var uri) ? uri : null;
+        => Uri.TryCreate(value, UriKind.Absolute, out var uri) 
+            ? (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps ? uri : null) 
+            : null;
 }

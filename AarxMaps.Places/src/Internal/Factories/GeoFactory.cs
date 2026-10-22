@@ -21,7 +21,8 @@ internal static class GeoFactory {
     // INNER METHS
     private static GeoCircle CreateCircle(LatLng center, double radius) {
         if (center is null) throw new MapsInvalidRequestException("Circle center must be specified.");
-        if (radius is <= 0 or > MaxRadiusMeters)
+        // NaN fails every comparison, so it must be rejected explicitly
+        if (double.IsNaN(radius) || radius is <= 0 or > MaxRadiusMeters)
             throw new MapsInvalidRequestException($"Radius must be greater than 0 and at most {MaxRadiusMeters} meters.");
 
         return new () {

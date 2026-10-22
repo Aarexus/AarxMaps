@@ -12,6 +12,24 @@ internal static class RequestValidator {
 
         return trimmed;
     }
+    
+    internal static string[] ValidateAndTrimList(IEnumerable<string> values, string name, int max) {
+        var valuesColl = values?.ToArray()
+            ?? throw new MapsInvalidRequestException($"{name} cannot be null.");
+
+        var len = valuesColl.Length;
+        if (len == 0 || len > max)
+            throw new MapsInvalidRequestException($"Between 1 and {max} {name} can be specified.");
+
+        for (var i = 0; i < len; i++) {
+            var type = valuesColl[i]?.Trim();
+            if (string.IsNullOrWhiteSpace(type))
+                throw new MapsInvalidRequestException($"Empty {name} values are not allowed.");
+            valuesColl[i] = type;
+        }
+
+        return valuesColl;
+    }
 
     internal static string ValidateSessionToken(string sessionToken) {
         if (string.IsNullOrEmpty(sessionToken) || sessionToken.Length > PlacesConstants.MaxSessionTokenLen)

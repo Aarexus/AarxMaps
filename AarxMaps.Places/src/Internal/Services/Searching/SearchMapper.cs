@@ -5,8 +5,13 @@ namespace AarxMaps.Places.Internal.Services.Searching;
 
 internal static class SearchMapper {
     // -------------------- METHS --------------------
-    internal static TextSearchResult ToTextResult(SearchResponse response)
-        => new () { Places = MapPlacesInfo(response.Places), NextPageToken = response.NextPageToken };
+    internal static TextSearchResult ToTextResult(SearchResponse response) {
+        var pageToken = response.NextPageToken;
+        return new () { 
+            Places = MapPlacesInfo(response.Places), 
+            NextPageToken = string.IsNullOrEmpty(pageToken) ? null : pageToken
+        };
+    }
     internal static NearbySearchResult ToNearbyResult(SearchResponse response)
         => new () { Places = MapPlacesInfo(response.Places) };
 

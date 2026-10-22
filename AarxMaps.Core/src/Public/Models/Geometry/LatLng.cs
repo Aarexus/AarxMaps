@@ -28,11 +28,12 @@ public sealed class LatLng {
     /// </summary>
     /// <param name="latitude">The latitude in decimal degrees, from -90 to 90.</param>
     /// <param name="longitude">The longitude in decimal degrees, from -180 to 180.</param>
-    /// <exception cref="MapsInvalidRequestException">A coordinate is outside its valid range.</exception>
+    /// <exception cref="MapsInvalidRequestException">A coordinate is NaN or outside its valid range.</exception>
     public LatLng(double latitude, double longitude) {
-        if (latitude is < -90 or > 90) 
+        // NaN fails every comparison, so it must be rejected explicitly
+        if (double.IsNaN(latitude) || latitude is < -90 or > 90)
             throw new MapsInvalidRequestException("Latitude must be between -90 and 90.");
-        if (longitude is < -180 or > 180) 
+        if (double.IsNaN(longitude) || longitude is < -180 or > 180)
             throw new MapsInvalidRequestException("Longitude must be between -180 and 180.");  
 
         Latitude = latitude;

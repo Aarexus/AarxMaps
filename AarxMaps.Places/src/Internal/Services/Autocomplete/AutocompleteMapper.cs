@@ -10,7 +10,6 @@ internal static class AutocompleteMapper {
         foreach (var suggestion in response.Suggestions) {
             var prediction = suggestion.PlacePrediction;
 
-            // Query predictions and incomplete entries have no place to suggest
             if (string.IsNullOrWhiteSpace(prediction?.PlaceId) || string.IsNullOrWhiteSpace(prediction.Text?.Text))
                 continue;
 

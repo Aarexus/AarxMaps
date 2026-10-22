@@ -79,20 +79,7 @@ public sealed class AutocompleteRequestBuilder {
     /// Thrown when the collection is null, empty, has more than 5 items, or contains an empty item.
     /// </exception>
     public AutocompleteRequestBuilder WithIncludedPrimaryTypes(IEnumerable<string> includedTypes) {
-        var types = includedTypes?.ToArray()
-            ?? throw new MapsInvalidRequestException("IncludedPrimaryTypes cannot be null.");
-
-        if (types.Length is 0 or > MaxPrimaryTypes)
-            throw new MapsInvalidRequestException($"Between 1 and {MaxPrimaryTypes} IncludedPrimaryTypes can be specified.");
-
-        for (var i = 0; i < types.Length; i++) {
-            var type = types[i]?.Trim();
-            if (string.IsNullOrWhiteSpace(type))
-                throw new MapsInvalidRequestException("Empty IncludedPrimaryTypes are not allowed.");
-            types[i] = type;
-        }
-
-        _includedPrimTypes = types;
+        _includedPrimTypes = RequestValidator.ValidateAndTrimList(includedTypes, "IncludedPrimaryTypes", MaxPrimaryTypes);
         return this;
     }
 

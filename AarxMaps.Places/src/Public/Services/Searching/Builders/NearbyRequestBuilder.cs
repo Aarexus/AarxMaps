@@ -3,6 +3,7 @@ using AarxMaps.Core.Models.Geometry;
 using AarxMaps.Places.Common.Models.Geometry;
 using AarxMaps.Places.Internal.Constants;
 using AarxMaps.Places.Internal.Factories;
+using AarxMaps.Places.Internal.Validation;
 
 namespace AarxMaps.Places.Services.Searching;
 
@@ -97,20 +98,7 @@ public sealed class NearbyRequestBuilder {
     /// Thrown when the collection is null, empty, has more than 50 items, or contains an empty item.
     /// </exception>
     public NearbyRequestBuilder WithIncludedTypes(IEnumerable<string> includedTypes) {
-        var types = includedTypes?.ToArray()
-            ?? throw new MapsInvalidRequestException("IncludedTypes cannot be null.");
-
-        if (types.Length is 0 or > MaxIncludedTypes)
-            throw new MapsInvalidRequestException($"Between 1 and {MaxIncludedTypes} IncludedTypes can be specified.");
-
-        for (var i = 0; i < types.Length; i++) {
-            var type = types[i]?.Trim();
-            if (string.IsNullOrWhiteSpace(type))
-                throw new MapsInvalidRequestException("Empty IncludedTypes are not allowed.");
-            types[i] = type;
-        }
-
-        _includedTypes = types;
+        _includedTypes = RequestValidator.ValidateAndTrimList(includedTypes, "IncludedTypes", MaxIncludedTypes);
         return this;
     }
 }
