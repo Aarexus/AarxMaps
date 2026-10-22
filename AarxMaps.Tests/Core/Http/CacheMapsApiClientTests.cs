@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using AarxMaps.Core.Abstractions;
 using AarxMaps.Core.Exceptions;
 using AarxMaps.Core.Internal.Caching.KeyStrategy;
@@ -270,6 +271,55 @@ public class CacheMapsApiClientTests {
         (await act.Should().ThrowAsync<OperationCanceledException>()).Which.Should().BeSameAs(cancelled);
         fx.Logger.Collector.Count.Should().Be(0);
     }
+
+    // ===================== NON-CACHEABLE REQUESTS BYPASS THE CACHE =====================
+    [Fact]
+    public async Task SendAsync_NotCacheable_ForwardsRequestAndTokenWithoutTouchingCache() {
+        var fx = new Fixture();
+        var request = TestRequests.Request(cacheable: false);
+        using var cts = new CancellationTokenSource();
+
+        var result = await fx.Sut.SendAsync<Sample>(request, cts.Token);
+
+        result.Should().BeSameAs(fx.Api);
+        await fx.Inner.Received(1).SendAsync<Sample>(request, cts.Token);
+        fx.Keys.ReceivedCalls().Should().BeEmpty();
+        fx.Cache.ReceivedCalls().Should().BeEmpty();
+        fx.Logger.Collector.Count.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task SendAsync_NotCacheableJsonDocument_ReturnsTheInnerDocumentWithoutTouchingCache() {
+        var fx = new Fixture();
+        var request = TestRequests.Request(cacheable: false);
+        using var expected = JsonDocument.Parse("""{"id":1}""");
+        fx.Inner.SendAsync<JsonDocument>(request, Arg.Any<CancellationToken>()).Returns(Task.FromResult(expected));
+
+        var actual = await fx.Sut.SendAsync<JsonDocument>(request, default);
+
+        actual.Should().BeSameAs(expected, "the raw-JSON caching path must not run, so no re-parse happens");
+        fx.Keys.ReceivedCalls().Should().BeEmpty();
+        fx.Cache.ReceivedCalls().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SendAsync_NotCacheableApiThrows_PropagatesSameExceptionWithoutTouchingCacheOrLogging() {
+        var fx = new Fixture();
+        var request = TestRequests.Request(cacheable: false);
+        var failure = new MapsNotFoundException("nf", HttpStatusCode.NotFound, null);
+        fx.ApiFails(failure);
+
+        var act = () => fx.Sut.SendAsync<Sample>(request, default);
+
+        (await act.Should().ThrowAsync<MapsNotFoundException>()).Which.Should().BeSameAs(failure);
+        fx.Keys.ReceivedCalls().Should().BeEmpty();
+        fx.Cache.ReceivedCalls().Should().BeEmpty();
+        fx.Logger.Collector.Count.Should().Be(0);
+    }
+
+    [Fact]
+    public void Request_ByDefault_IsCacheable() 
+        => new MapsApiRequest().Cacheable.Should().BeTrue("existing callers must keep being cached");
 
     // ===================== STREAMS BYPASS THE CACHE =====================
     [Fact]

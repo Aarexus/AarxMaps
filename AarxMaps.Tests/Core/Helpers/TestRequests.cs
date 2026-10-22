@@ -26,7 +26,8 @@ internal static class TestRequests {
         IDictionary<string, string>? headers = null,
         IDictionary<string, string>? query = null,
         object? payload = null,
-        ApiKeyLocation apiKeyLocation = ApiKeyLocation.Header
+        ApiKeyLocation apiKeyLocation = ApiKeyLocation.Header,
+        bool cacheable = true
     ) => new() {
             Method = method ?? HttpMethod.Get,
             BaseUrl = baseUrl ?? DefaultBaseUrl,
@@ -34,7 +35,8 @@ internal static class TestRequests {
             Headers = headers,
             Query = query,
             Payload = payload,
-            ApiKeyLocation = apiKeyLocation
+            ApiKeyLocation = apiKeyLocation,
+            Cacheable = cacheable
         };
 
     public static string[] QueryPairs(Uri uri)

@@ -38,7 +38,8 @@ internal static class ExceptionHandler {
 
     private static async Task<string?> ReadBoundedBodyAsync(HttpResponseMessage response, CancellationToken ct) {
         try {
-            await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+            var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+            await using var streamLifetime = stream.ConfigureAwait(false);
             using var reader = new StreamReader(stream, Encoding.UTF8);
 
             var buffer = new char[MaxBodyChars];

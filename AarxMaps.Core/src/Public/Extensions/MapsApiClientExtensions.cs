@@ -49,18 +49,25 @@ public static class MapsApiClientExtensions {
     /// This path is never cached, and <c>null</c> elements are skipped.
     /// </para>
     /// </remarks>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="client"/> is <c>null</c> (thrown when enumeration starts).
+    /// </exception>
     /// <exception cref="MapsApiException">
     /// HTTP error, malformed JSON, or the connection failed mid-stream.
     /// </exception>
     public static async IAsyncEnumerable<T> SendAndEnumerateAsync<T>(
         this IMapsApiClient client, MapsApiRequest request, [EnumeratorCancellation] CancellationToken ct
     ) {
-        // Created and owned in this scope. Disposed in reverse order: enumerator, then response.
-        await using var response = await client.SendStreamAsync(request, ct).ConfigureAwait(false);
+        ArgumentNullException.ThrowIfNull(client);
 
-        await using var enumerator = MapsJsonSerializer
+        // Created and owned in this scope. Disposed in reverse order: enumerator, then response.
+        var response = await client.SendStreamAsync(request, ct).ConfigureAwait(false);
+        await using var responseLifetime = response.ConfigureAwait(false);
+
+        var enumerator = MapsJsonSerializer
             .DeserializeStreamAsync<T>(response.Stream, ct)
             .GetAsyncEnumerator(ct);
+        await using var enumeratorLifetime = enumerator.ConfigureAwait(false);
 
         while (true) {
             bool hasNext;

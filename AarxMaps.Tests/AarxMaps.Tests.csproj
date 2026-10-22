@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AarxMaps.Core\AarxMaps.Core.csproj" />
+    <ProjectReference Include="..\AarxMaps.Places\AarxMaps.Places.csproj" />
   </ItemGroup>
 
 </Project>

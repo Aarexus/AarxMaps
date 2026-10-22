@@ -1,0 +1,7 @@
+root = true
+
+# CA1032: each SDK exception has one constructor with optional parameters (message, status, response, inner)
+# that already covers new X(), new X(message) and new X(message, inner: ex). The three standard overloads
+# would only duplicate it.
+[AarxMaps.Core/src/Public/Exceptions/*.cs]
+dotnet_diagnostic.CA1032.severity = none

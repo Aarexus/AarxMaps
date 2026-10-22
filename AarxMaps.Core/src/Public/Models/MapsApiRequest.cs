@@ -66,4 +66,14 @@ public sealed class MapsApiRequest {
     /// a JSON body.
     /// </remarks>
     public object? Payload { get; init; }
+
+    /// <summary>
+    /// Gets whether a caching layer may store and serve the response to this request.
+    /// </summary>
+    /// <remarks>
+    /// Defaults to <c>true</c>. Set it to <c>false</c> for responses that must always be fresh,
+    /// such as content Google does not allow to be cached (for example Places photo names,
+    /// which expire). Has no effect when no cache layer is registered.
+    /// </remarks>
+    public bool Cacheable { get; init; } = true;
 }
