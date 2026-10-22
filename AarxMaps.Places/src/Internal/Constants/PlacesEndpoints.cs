@@ -5,4 +5,5 @@ internal static class PlacesEndpoints {
     public const string SearchText = "places:searchText";
     public const string SearchNearby = "places:searchNearby";
     public const string Autocomplete = "places:autocomplete";
+    public const string Details = "places";
 }

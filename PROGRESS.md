@@ -28,15 +28,18 @@ Last updated: 2026-10-21
 5. **Validate at the service boundary**, not only in builders: null requests, empty place IDs, `fields`, photo size/count limits. Throw `MapsInvalidRequestException`.
 6. **Mapper robustness**: `DetailsMapper` assumes `photoUri` is present; partial/malformed responses should fail intentionally, not with an incidental `UriFormatException`. Absent arrays map to empty collections, absent scalars to `null`, consistently.
 7. **Small cleanups**: mostly done in the Autocomplete and Searching passes (read-only headers, no empty builder constructors, non-null `PlaceId` everywhere). Still open: consider exposing the autocomplete match start offset.
-8. **Decide** whether `GetDetailsAsync` takes a configurable field mask or documents a fixed one (`GetDetailsRawAsync` is the escape hatch). Document `GetDetailsRawAsync` disposal and empty-mask behavior.
+8. **Decided (2026-10-21):** `GetDetailsAsync` keeps a fixed field mask, documented as billed Enterprise + Atmosphere; `GetDetailsRawAsync(request, fields)` is the escape hatch.
 9. **Tests** (`AarxMaps.Tests/Places/`): DI with/without Core; per-operation method, endpoint, field mask, headers, payload; coordinate order and bounds; mapper fixtures (complete, partial, missing arrays, reviews without author/text); photo limits and disposal; cancellation propagation.
-10. Fix DI error message naming.
+10. DI error message naming: fixed in Places (2026-10-21); Routes still says `D3lg4doMaps.Core`.
 11. **Autocomplete: review findings fixed (2026-10-20).** Zero warnings on both TFMs (checked in an isolated build, since Details/Search/PlacesService still break the project). Open follow-ups:
     - Wire `sessionToken` into the Details request so a session can be closed (Autocomplete already sends it).
     - Tests at the end of the module refactor: payload snapshot (`locationBias.circle.center`, unequal lat/lng, nulls left out, `sessionToken`), field mask, mapper fixtures (no `placePrediction`, no `matches`, empty `{}`), builder validation, `ct` propagation, Core `JsonDocument` cache hit returning a fresh, independently disposable document.
 12. **Core warnings exist on `main`** (CA1032, CA1724, CA2007, CA1062, CS1591 in exceptions/`CachingInjection`/`MapsApiClientExtensions`). The "zero warnings" rule isn't met by Core; clean up before release.
 13. **Searching: review findings fixed (2026-10-21).** Zero warnings in the isolated build. Text restriction is rectangle-only, Nearby restriction circle-only, Text bias accepts both. Open follow-up: Autocomplete also accepts rectangles for bias/restriction (not exposed yet).
-14. **Remaining Places build errors** are only in `DetailsService` (missing `ct` overloads) and `PlacesService` (partial properties, stale types). Next review target: Details.
+14. **Details: review findings fixed (2026-10-21).** Zero warnings in the isolated build. Typed methods deserialize into `PlaceDetailsDto`/`PhotoMediaDto`; photo calls are never cached (`MapsApiRequest.Cacheable = false`) and send the API key in the header; reviews are callable again.
+15. **Blocker: modules can't see Core's `internal MapsCoreMarker`** (Places DI `CS0122`; Routes has the same check). Needs a decision: public Core check (recommended) vs `InternalsVisibleTo` for module assemblies. This is now the only Places build error.
+16. **`CA1724`**: `DependencyInjection` clashes with `Microsoft.Extensions.DependencyInjection` in Places and Core (`CachingInjection.cs`). Rename to `*ServiceCollectionExtensions` across all packages before release.
+17. **Optional:** share `LocalizedTextDto` between Searching and Details (currently one per feature).
 
 ### Phase 3 - Routes
 
@@ -73,6 +76,11 @@ Last updated: 2026-10-21
 - **Rectangle geometry**: `GeoRectangle { Low, High }` (south-west / north-east, serialized as Google's viewport). Builders take `(LatLng southWest, LatLng northEast)`; only latitudes are ordered, so antimeridian-crossing rectangles are allowed.
 - **Paging**: `TextRequestBuilder.WithPageSize(int)` and `WithPageToken(string)` are separate; page size 1-20 (`PlacesConstants.MaxPageSize`), default 20 for both Text and Nearby (Google's default).
 - **Search DTOs**: one `SearchResponse` (Places + NextPageToken) shared by Text and Nearby; `PlaceSearchInfo.PlaceId`/`DisplayName` are non-null, matching `PlaceSuggestion`.
+- **Typed paths deserialize into DTOs, not `JsonDocument` (decided 2026-10-21)**: STJ only materializes declared properties, so response size isn't a reason to avoid DTOs; `JsonDocument` keeps the whole payload, re-parses on every cache hit (raw-JSON caching) and hides shape mismatches (e.g. `timeZone`). `JsonDocument` stays only for `GetDetailsRawAsync`.
+- **Details API shape (2026-10-21)**: one `DetailsRequest` (place ID + session token) for every `IDetailsService` method; `GetPhotosAsync(request, PhotoOptions?)`, `GetDetailsRawAsync(request, fields)`. The session token belongs on exactly one call.
+- **`MapsApiRequest.Cacheable` (Core, 2026-10-21)**: defaults to `true`; `CacheMapsApiClient` forwards non-cacheable requests untouched. Used for Places photos (details `photos` mask, media calls, raw requests whose fields include photos).
+- **Photo media requests send the API key in the header**, not the query string, so it never lands in URL logs.
+- **Shared consumer-value checks** (place ID, session token) live in `Internal/Validation/RequestValidator`.
 - **Tracking split**: `CLAUDE.md` for stable guidance, `PROGRESS.md` for status/decisions/lessons.
 
 ## Lessons learned
