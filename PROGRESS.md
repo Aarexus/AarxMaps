@@ -21,26 +21,42 @@ Last updated: 2026-10-22
 
 ### Phase 2 - Places
 
-1. **Restore the build** (both TFMs): fix Autocomplete namespaces, implement `ct` overloads in `DetailsService`, replace `PlacesService` partial properties with a plain constructor-injected aggregate exposing `IAutocompleteService`, `IDetailsService`, `ISearchService` (match the Routes `RoutesService` pattern).
-2. **Fix lat/lng swap**: `GeoFactory.CreateCircle` takes `(radius, latitude, longitude)` but `AutocompleteRequestBuilder.WithLocationBias` and `NearbyRequestBuilder.WithLocationRestriction` pass longitude first. Prefer passing a `LatLng` instead of two doubles. Regression-test with unequal, nonzero values.
-3. **Dispose photo `JsonDocument`** in `GetPhotoAndMapAsync` once the mapper has materialized the values.
-4. **Cancellation**: every public async method takes `CancellationToken ct` and passes it to `IMapsApiClient`.
-5. **Validate at the service boundary**, not only in builders: null requests, empty place IDs, `fields`, photo size/count limits. Throw `MapsInvalidRequestException`.
-6. **Mapper robustness**: `DetailsMapper` assumes `photoUri` is present; partial/malformed responses should fail intentionally, not with an incidental `UriFormatException`. Absent arrays map to empty collections, absent scalars to `null`, consistently.
-7. **Small cleanups**: mostly done in the Autocomplete and Searching passes (read-only headers, no empty builder constructors, non-null `PlaceId` everywhere). Still open: consider exposing the autocomplete match start offset.
-8. **Decided (2026-10-21):** `GetDetailsAsync` keeps a fixed field mask, documented as billed Enterprise + Atmosphere; `GetDetailsRawAsync(request, fields)` is the escape hatch.
-9. **Tests** (`AarxMaps.Tests/Places/`): DI with/without Core; per-operation method, endpoint, field mask, headers, payload; coordinate order and bounds; mapper fixtures (complete, partial, missing arrays, reviews without author/text); photo limits and disposal; cancellation propagation.
-10. DI error message naming: fixed in Places (2026-10-21); Routes still says `D3lg4doMaps.Core`.
-11. **Autocomplete: review findings fixed (2026-10-20).** Zero warnings on both TFMs (checked in an isolated build, since Details/Search/PlacesService still break the project). Open follow-ups:
-    - Wire `sessionToken` into the Details request so a session can be closed (Autocomplete already sends it).
-    - Tests at the end of the module refactor: payload snapshot (`locationBias.circle.center`, unequal lat/lng, nulls left out, `sessionToken`), field mask, mapper fixtures (no `placePrediction`, no `matches`, empty `{}`), builder validation, `ct` propagation, Core `JsonDocument` cache hit returning a fresh, independently disposable document.
-12. **Core warnings exist on `main`** (CA1032, CA1724, CA2007, CA1062, CS1591 in exceptions/`CachingInjection`/`MapsApiClientExtensions`). The "zero warnings" rule isn't met by Core; clean up before release.
-13. **Searching: review findings fixed (2026-10-21).** Zero warnings in the isolated build. Text restriction is rectangle-only, Nearby restriction circle-only, Text bias accepts both. Open follow-up: Autocomplete also accepts rectangles for bias/restriction (not exposed yet).
-14. **Details: review findings fixed (2026-10-21).** Zero warnings in the isolated build. Typed methods deserialize into `PlaceDetailsDto`/`PhotoMediaDto`; photo calls are never cached (`MapsApiRequest.Cacheable = false`) and send the API key in the header; reviews are callable again.
-15. **Core registration check (2026-10-22):** public `services.IsAarxMapsRegistered()` in Core replaces direct `MapsCoreMarker` checks (Core's `AddAarxMaps`, cache registration, Places DI). **Places builds on both TFMs.** Routes DI still references the internal marker (fix in Phase 3).
-16. **`CA1724`**: `DependencyInjection` clashes with `Microsoft.Extensions.DependencyInjection` in Places and Core (`CachingInjection.cs`). Rename to `*ServiceCollectionExtensions` across all packages before release.
-17. **Test project now references Places** and Places exposes internals to `DynamicProxyGenAssembly2`; Places tests are the next session's work (see item 9).
-18. **Optional:** share `LocalizedTextDto` between Searching and Details (currently one per feature).
+**Done (2026-10-20 to 2026-10-22):** Autocomplete, Searching and Details reviewed and fixed; Places builds on both TFMs. Details are in Critical decisions below. Everything left for the phase:
+
+1. **Places tests** - next session. Plan below.
+2. **Before release** (not blocking tests):
+   - CA1724: rename `DependencyInjection` to `*ServiceCollectionExtensions` in Places and Core (and Routes in Phase 3).
+   - Core's pre-existing analyzer warnings (CA1032, CA2007, CA1062, CS1591 in exceptions and `MapsApiClientExtensions`); the zero-warnings rule isn't met by Core yet.
+   - Caching docs: Google's terms restrict caching most Places content beyond place IDs; say so on `AddAarxMaps*Cache`.
+3. **Optional:** rectangle bias/restriction on `AutocompleteRequestBuilder` (Google supports it); expose autocomplete match start offset; share `LocalizedTextDto` between Searching and Details.
+
+### Places test plan
+
+**Setup.** The test project already references Places, and Places exposes internals to `DynamicProxyGenAssembly2`. Reuse the Core helpers (`TestServices.Create()`, `TestRequests`, `TestServices.ValidConfig`) and put Places-only helpers and JSON fixtures under `AarxMaps.Tests/Places/Helpers/`. Traits: `Package=Places`, `Module=Autocomplete|Searching|Details|Common|Extensions`, `Type=<class>`.
+
+**Two levels:**
+- **Unit (NSubstitute `IMapsApiClient`)**: capture the `MapsApiRequest` and return DTOs. Assert method, endpoint, headers, query, `Cacheable` and `ct` propagation, plus mapping.
+- **Wire (MockHttp through the real `MapsApiClient`, built via `TestServices.Create().AddAarxMapsPlaces()` plus `services.AddHttpClient(nameof(MapsApiClient)).ConfigurePrimaryHttpMessageHandler(() => mock)`, the pattern in `CacheDependencyInjectionTests.BuildEndToEnd`)**: needed where the public request model is the payload (Autocomplete, Text, Nearby). Assert the serialized JSON body, not the C# object, plus JSON fixtures -> public model. Also the only way to prove the photo API key travels in the `X-Goog-Api-Key` header and never in the URL.
+
+**What to assert** (values verified against Google's reference; see Critical decisions):
+- **DI (`AddAarxMapsPlaces`)**: without `AddAarxMaps()` it throws `MapsApiException` naming `AddAarxMaps()`; with Core it registers the 4 services as transient; `BuildStrict` resolves `IPlacesService` and its three properties.
+- **Geometry (`GeoFactory` via builders)**: unequal, non-zero lat/lng land in the right fields (regression for the old swap); radius bounds (0, 50 000]; null center or corners; rectangle south-west latitude <= north-east latitude, with antimeridian-crossing longitudes allowed.
+- **Shared validation (`RequestValidator` via builders)**: session token 1-36 chars of `[A-Za-z0-9_-]`; required text trimmed, empty or whitespace rejected.
+- **Autocomplete**:
+  - Request: POST `places:autocomplete`, the field mask from `AutocompleteFactory`, body `{"input":..,"locationBias":{"circle":{"center":{"latitude":..,"longitude":..},"radius":..}}}`, nulls omitted, `sessionToken` sent.
+  - Builder: bias + restriction together throws; up to 5 primary types, copied and trimmed (mutating the caller's list after `Build()` doesn't change the request).
+  - Mapper: entries without `placePrediction` (query predictions) skipped; `EndOffset` from `text.matches[0].endOffset` or null; `{}` response -> empty list.
+- **Searching**:
+  - Text: POST `places:searchText`, mask with `nextPageToken`; restriction serializes as `rectangle {low, high}`; bias accepts circle or rectangle; `pageSize` default 20, range 1-20; empty page token rejected.
+  - Nearby: POST `places:searchNearby`, mask without `nextPageToken`; `locationRestriction.circle`; `maxResultCount` default 20.
+  - Mapper: places missing `id` or `displayName.text` skipped; `Types` is a copy (not the DTO's list).
+- **Details**:
+  - Endpoint: GET `places/{escaped id}` (an ID containing `/` or `?` is escaped); `sessionToken` as a query parameter only when set.
+  - Caching: details and reviews requests `Cacheable = true`; the photos request and every media request `Cacheable = false`; raw requests not cacheable when the fields contain `photos`, `photos.*` or `*`.
+  - Raw fields: trimmed and de-duplicated; null, empty or blank field throws `MapsInvalidRequestException`.
+  - Photos: media request `GET {photo.name}/media?skipHttpRedirect=true&maxHeightPx=..&maxWidthPx=..`; `MaxPhotos` caps the media calls; nameless photos skipped; when one media call fails, the others see their token cancelled and the exception propagates; defaults 10 photos / 480 px, limits 1-10 and 1-4800.
+  - Mapper: `timeZone.id` -> `TimeZone`; `priceLevel` enum strings -> `PriceLevel` (unknown -> null); invalid URI strings -> null (no `UriFormatException`); rating-only reviews kept with `Text = null`; entries with neither text nor rating skipped; `publishTime` parsed, invalid -> null; review summary maps `disclosureText` and `flagContentUri`; absent arrays -> empty, absent objects -> null; `GoogleMapsLinks` never null.
+- **Every service**: null request -> `ArgumentNullException`; the caller's `ct` reaches `IMapsApiClient`; Core exceptions (404 -> `MapsNotFoundException`, ...) propagate unchanged.
 
 ### Phase 3 - Routes
 
@@ -73,7 +89,7 @@ Last updated: 2026-10-22
 - **Public request models may be the wire payload** when their shape matches Google's (e.g. `AutocompleteRequest`, `LocationBias { Circle }`). Responses always go through internal DTOs and mappers.
 - **Geometry inputs take `LatLng`**, not separate doubles (`WithLocationBias(LatLng center, double radius)`); radius is validated to (0, 50 000] m in `GeoFactory`.
 - **`PlaceSuggestion.EndOffset` is `int?`** (first match only); no sentinel values.
-- **Autocomplete session tokens** are supported on the builder (`WithSessionToken`); Details integration pending.
+- **Session tokens**: `AutocompleteRequestBuilder.WithSessionToken` and `DetailsRequestBuilder.WithSessionToken` (sent as the `sessionToken` query parameter on Details).
 - **`SendAsync<JsonDocument>` is cached like everything else.** `CacheMapsApiClient` stores the raw JSON (same cache key) and returns a new `JsonDocument` per call, which the caller owns and disposes. Unparseable cached JSON is logged and treated as a miss.
 - **Namespace rule (2026-10-21)**: public feature types use `AarxMaps.Places.Services.<Feature>` (flat, no `.Builders/.Models/.Requests`). Supersedes the earlier `AarxMaps.Places.<Feature>` note.
 - **Rectangle geometry**: `GeoRectangle { Low, High }` (south-west / north-east, serialized as Google's viewport). Builders take `(LatLng southWest, LatLng northEast)`; only latitudes are ordered, so antimeridian-crossing rectangles are allowed.

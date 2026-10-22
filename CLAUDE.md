@@ -120,7 +120,7 @@ Follows the existing code; match it.
 - Layout mirrors the package: `AarxMaps.Tests/<Package>/<Area>/<Type>Tests.cs`, namespace `AarxMaps.Tests.<Package>.<Area>`. Shared helpers in `AarxMaps.Tests/<Package>/Helpers/`.
 - Every test class carries traits: `[Trait("Package", "Core")]`, `[Trait("Module", "Http")]`, `[Trait("Type", "MapsApiClient")]`.
 - No live Google calls, no real API keys. Use MockHttp handlers and JSON fixtures.
-- The test project currently references only Core. Add `ProjectReference`s to Places/Routes when their tests land.
+- The test project references Core and Places. Add the Routes `ProjectReference` when its tests land. Core helpers (`AarxMaps.Tests/Core/Helpers`: `TestServices`, `TestRequests`) are reusable from other packages' tests.
 
 ## CI / release
 
