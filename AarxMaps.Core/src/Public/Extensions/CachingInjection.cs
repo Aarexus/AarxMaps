@@ -2,7 +2,6 @@ using AarxMaps.Core.Abstractions;
 using AarxMaps.Core.Configuration;
 using AarxMaps.Core.Configuration.Validation;
 using AarxMaps.Core.Exceptions;
-using AarxMaps.Core.Internal;
 using AarxMaps.Core.Internal.Caching;
 using AarxMaps.Core.Internal.Caching.KeyStrategy;
 using AarxMaps.Core.Internal.Caching.Store;
@@ -147,14 +146,12 @@ public static partial class DependencyInjection {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(cachingOpts);
 
-        if (!services.Any(s => s.ServiceType == typeof(MapsCoreMarker)))
+        if (!services.IsAarxMapsRegistered())
             throw new MapsApiException(
-            "AarxMaps.Core services are not registered. Call AddAarxMaps() before adding cache-memory layer."
-        );
+                "AarxMaps.Core services are not registered. Call AddAarxMaps() before adding cache-memory layer.");
         
         if (services.Any(s => s.ServiceType == typeof(MapsCachingMarker)))
             throw new MapsCacheException(
-                "Cache layer was already provided. You can only use either AddMemoryCache() or AddDistributedCache()."
-            );
+                "Cache layer was already provided. You can only use either AddMemoryCache() or AddDistributedCache().");
     }
 }

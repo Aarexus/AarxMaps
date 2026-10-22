@@ -1,21 +1,21 @@
 # AarxMaps - Progress
 
-Last updated: 2026-10-21
+Last updated: 2026-10-22
 
 ## Current status
 
 | Phase | Scope          | Status                                                            |
 | ----- | -------------- | ----------------------------------------------------------------- |
-| 1     | Core module    | Done, merged (#1). 603 tests passing on net8.0 and net9.0.        |
-| 2     | Places module  | In progress on `Phase2-Places`. **Does not build.**       |
+| 1     | Core module    | Done, merged (#1). 611 tests passing on net8.0 and net9.0 (Phase 2 additions: `Cacheable`, `IsAarxMapsRegistered`). |
+| 2     | Places module  | In progress on `Phase2-Places`. Builds on net8.0 + net9.0; tests pending. |
 | 3     | Routes module  | Not started. **Does not build** against the new Core.       |
 | 4     | Docs + release | Not started. Docusaurus `docs/`, README rewrite, 1.0.0 publish. |
 
-### Build state (2026-10-20)
+### Build state (2026-10-22)
 
-- **Places** (51 errors): Autocomplete files moved to `Internal/Services/Autocomplete/` and `Public/Services/Autocomplete/` without updating namespaces/usings; `DetailsService` doesn't implement the new `CancellationToken` overloads of `IDetailsService`; `PlacesService` uses partial properties (C# 13), which fails on `net8.0`.
-- **Routes** (2 errors): `DistanceMatrixService` depends on `IMapsJsonSerializer`, which no longer exists. Core now exposes the static internal `MapsJsonSerializer` and the `SendAndEnumerateAsync<T>` extension.
-- Both modules' DI error messages still say `D3lg4doMaps.Core`.
+- **Core**: builds; 611 tests passing on net8.0 and net9.0. Pre-existing analyzer warnings remain (item 12).
+- **Places**: builds on both TFMs. Only warning in the real build is CA1724 (item 16). No tests yet.
+- **Routes** (not touched): `DistanceMatrixService` depends on the removed `IMapsJsonSerializer`; DI references Core's internal `MapsCoreMarker` and still says `D3lg4doMaps.Core`.
 
 ## Next steps
 
@@ -37,11 +37,14 @@ Last updated: 2026-10-21
 12. **Core warnings exist on `main`** (CA1032, CA1724, CA2007, CA1062, CS1591 in exceptions/`CachingInjection`/`MapsApiClientExtensions`). The "zero warnings" rule isn't met by Core; clean up before release.
 13. **Searching: review findings fixed (2026-10-21).** Zero warnings in the isolated build. Text restriction is rectangle-only, Nearby restriction circle-only, Text bias accepts both. Open follow-up: Autocomplete also accepts rectangles for bias/restriction (not exposed yet).
 14. **Details: review findings fixed (2026-10-21).** Zero warnings in the isolated build. Typed methods deserialize into `PlaceDetailsDto`/`PhotoMediaDto`; photo calls are never cached (`MapsApiRequest.Cacheable = false`) and send the API key in the header; reviews are callable again.
-15. **Blocker: modules can't see Core's `internal MapsCoreMarker`** (Places DI `CS0122`; Routes has the same check). Needs a decision: public Core check (recommended) vs `InternalsVisibleTo` for module assemblies. This is now the only Places build error.
+15. **Core registration check (2026-10-22):** public `services.IsAarxMapsRegistered()` in Core replaces direct `MapsCoreMarker` checks (Core's `AddAarxMaps`, cache registration, Places DI). **Places builds on both TFMs.** Routes DI still references the internal marker (fix in Phase 3).
 16. **`CA1724`**: `DependencyInjection` clashes with `Microsoft.Extensions.DependencyInjection` in Places and Core (`CachingInjection.cs`). Rename to `*ServiceCollectionExtensions` across all packages before release.
-17. **Optional:** share `LocalizedTextDto` between Searching and Details (currently one per feature).
+17. **Test project now references Places** and Places exposes internals to `DynamicProxyGenAssembly2`; Places tests are the next session's work (see item 9).
+18. **Optional:** share `LocalizedTextDto` between Searching and Details (currently one per feature).
 
 ### Phase 3 - Routes
+
+- Replace the `MapsCoreMarker` check in `AddAarxMapsRoutes` with `services.IsAarxMapsRegistered()` and fix its `D3lg4doMaps.Core` message.
 
 - Migrate `DistanceMatrixService` to `SendAndEnumerateAsync<T>`; drop `IMapsJsonSerializer`.
 - Audit against the same checklist as Places (cancellation, validation, mappers, tests, XML docs).
@@ -81,6 +84,7 @@ Last updated: 2026-10-21
 - **`MapsApiRequest.Cacheable` (Core, 2026-10-21)**: defaults to `true`; `CacheMapsApiClient` forwards non-cacheable requests untouched. Used for Places photos (details `photos` mask, media calls, raw requests whose fields include photos).
 - **Photo media requests send the API key in the header**, not the query string, so it never lands in URL logs.
 - **Shared consumer-value checks** (place ID, session token) live in `Internal/Validation/RequestValidator`.
+- **Module DI checks use `IsAarxMapsRegistered()` (2026-10-22)**: Core's marker stays `internal`; modules never reference Core internals.
 - **Tracking split**: `CLAUDE.md` for stable guidance, `PROGRESS.md` for status/decisions/lessons.
 
 ## Lessons learned

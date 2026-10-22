@@ -3,11 +3,11 @@ using AarxMaps.Core.Internal.Http;
 using AarxMaps.Core.Abstractions;
 using AarxMaps.Core.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using AarxMaps.Core.Internal;
 using Microsoft.Extensions.Options;
 using AarxMaps.Core.Internal.Constants;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using AarxMaps.Core.Configuration.Validation;
+using AarxMaps.Core.Internal;
 
 namespace AarxMaps.Core.Extensions;
 
@@ -56,7 +56,7 @@ public static partial class DependencyInjection {
         // VALIDATION
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(config);
-        if (services.Any(s => s.ServiceType == typeof(MapsCoreMarker)))
+        if (services.IsAarxMapsRegistered())
             throw new InvalidOperationException("AddAarxMaps() was already called.");
 
         // CONFIGURATION
@@ -81,5 +81,26 @@ public static partial class DependencyInjection {
         services.AddSingleton<MapsCoreMarker>();
 
         return services;
+    }
+
+    /// <summary>
+    /// Determines whether <c>AddAarxMaps()</c> has already been called on the service collection.
+    /// </summary>
+    /// <param name="services">
+    /// The <see cref="IServiceCollection"/> to inspect.
+    /// </param>
+    /// <returns>
+    /// <c>true</c> when the AarxMaps core services are registered; otherwise <c>false</c>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="services"/> is <c>null</c>.
+    /// </exception>
+    /// <remarks>
+    /// Intended for module registration methods (such as <c>AddAarxMapsPlaces()</c>) that require
+    /// Core to be registered first and must fail with a clear message otherwise.
+    /// </remarks>
+    public static bool IsAarxMapsRegistered(this IServiceCollection services) {
+        ArgumentNullException.ThrowIfNull(services);
+        return services.Any(s => s.ServiceType == typeof(MapsCoreMarker));
     }
 }

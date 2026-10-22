@@ -87,6 +87,30 @@ public class DependencyInjectionTests {
             && d.Lifetime == ServiceLifetime.Singleton);
     }
 
+    // ===================== IsAarxMapsRegistered =====================
+    [Fact]
+    public void IsAarxMapsRegistered_EmptyCollection_ReturnsFalse()
+        => new ServiceCollection().IsAarxMapsRegistered().Should().BeFalse();
+
+    [Fact]
+    public void IsAarxMapsRegistered_AfterAddAarxMaps_ReturnsTrue()
+        => TestServices.Create().IsAarxMapsRegistered().Should().BeTrue();
+
+    [Fact]
+    public void IsAarxMapsRegistered_UnrelatedRegistrationsOnly_ReturnsFalse() {
+        var services = new ServiceCollection();
+        services.AddSingleton<OtherClient>();
+        services.AddHttpClient();
+
+        services.IsAarxMapsRegistered().Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsAarxMapsRegistered_NullServices_ThrowsArgumentNullException() {
+        var act = () => ((IServiceCollection)null!).IsAarxMapsRegistered();
+        act.Should().Throw<ArgumentNullException>().WithParameterName("services");
+    }
+
     // ===================== resolution =====================
     [Fact]
     public void BuildServiceProvider_StrictScopesAndValidateOnBuild_Succeeds() {
