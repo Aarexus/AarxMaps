@@ -102,7 +102,7 @@ Follows the existing code; match it.
 - Short uppercase step comments inside methods: `// VALIDATION`, `// CONFIGURATION`, `// SERVICES`.
 - `.ConfigureAwait(false)` on every `await` in library code (not in tests).
 - Input validation: `ArgumentNullException.ThrowIfNull` for null arguments to infrastructure/DI; `MapsInvalidRequestException` for invalid consumer request values (empty query, coordinates out of range).
-- Analyzers run at `AllEnabledByDefault`. Fix warnings; don't suppress them without a reason in a comment.
+- Analyzers run at `AllEnabledByDefault`. Fix warnings; don't suppress them without a reason in a comment. Path-scoped suppressions go in the root `.editorconfig`; one-off ones use `#pragma warning disable/restore` around the statement.
 
 ## XML documentation
 

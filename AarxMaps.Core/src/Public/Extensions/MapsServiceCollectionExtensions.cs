@@ -15,7 +15,7 @@ namespace AarxMaps.Core.Extensions;
 /// Provides extension methods for registering the AarxMaps SDK services
 /// into the dependency injection container.
 /// </summary>
-public static partial class DependencyInjection {
+public static partial class MapsServiceCollectionExtensions {
     /// <summary>
     /// Registers the core services required to use the AarxMaps SDK.
     /// </summary>

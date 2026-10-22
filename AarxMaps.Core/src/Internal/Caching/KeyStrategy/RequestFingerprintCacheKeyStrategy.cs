@@ -65,12 +65,15 @@ internal sealed class RequestFingerprintCacheKeyStrategy : ICacheKeyStrategy {
         if (dict is not null) {
             string Norm(string s) => trim ? s.Trim() : s;
 
+            // Lowercase is the canonical header-name form (HTTP/2); used only for key comparison, never round-tripped
+#pragma warning disable CA1308
             var entries = dict
                 .Select(kv => (
                     Key: ignoreCase ? Norm(kv.Key).ToLowerInvariant() : Norm(kv.Key),
                     Value: Norm(kv.Value ?? string.Empty)))
                 .Where(e => include(e.Key))
                 .OrderBy(e => e.Key, StringComparer.Ordinal);
+#pragma warning restore CA1308
 
             foreach (var (key, value) in entries)
                 w.WriteString(key, value);

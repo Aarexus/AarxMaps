@@ -22,7 +22,7 @@ namespace AarxMaps.Places.Common.Extensions;
 /// Google Places API, including search, autocomplete, and details services.
 /// <para><b>Registration:</b> Core services must be registered first by calling <c>AddAarxMaps()</c>.</para>
 /// </remarks>
-public static class DependencyInjection {
+public static class PlacesServiceCollectionExtensions {
     /// <summary>
     /// Registers all Places module services into the dependency injection container.
     /// Idempotent method therefore calling it several times does not throw.

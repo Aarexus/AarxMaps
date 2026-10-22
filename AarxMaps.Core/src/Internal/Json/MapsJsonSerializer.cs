@@ -33,9 +33,10 @@ internal static class MapsJsonSerializer {
     ) {
         ArgumentNullException.ThrowIfNull(utf8Json);
 
-        await using var enumerator = JsonSerializer
+        var enumerator = JsonSerializer
             .DeserializeAsyncEnumerable<T>(utf8Json, MapsJsonOptions.Default, ct)
             .GetAsyncEnumerator(ct);
+        await using var enumeratorLifetime = enumerator.ConfigureAwait(false);
 
         while (true) {
             T? item;

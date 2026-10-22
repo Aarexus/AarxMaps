@@ -7,63 +7,37 @@ Last updated: 2026-10-22
 | Phase | Scope          | Status                                                            |
 | ----- | -------------- | ----------------------------------------------------------------- |
 | 1     | Core module    | Done, merged (#1). 611 tests passing on net8.0 and net9.0 (Phase 2 additions: `Cacheable`, `IsAarxMapsRegistered`). |
-| 2     | Places module  | In progress on `Phase2-Places`. Builds on net8.0 + net9.0; tests done: 407 Places tests, 1,032 total passing on both TFMs. |
+| 2     | Places module  | Done on `Phase2-Places`, ready for PR #2. Core and Places build with 0 warnings on net8.0 + net9.0; 1,032 tests passing (407 Places). |
 | 3     | Routes module  | Not started. **Does not build** against the new Core.       |
 | 4     | Docs + release | Not started. Docusaurus `docs/`, README rewrite, 1.0.0 publish. |
 
 ### Build state (2026-10-22)
 
-- **Core**: builds; 611 tests passing on net8.0 and net9.0. Pre-existing analyzer warnings remain (item 12).
-- **Places**: builds on both TFMs. Only warning in the real build is CA1724. Tests: all 5 modules done (helpers + DI, geometry + validation, autocomplete, searching, details incl. photos).
+- **Core**: builds with 0 warnings on both TFMs (analyzer backlog cleared 2026-10-22).
+- **Places**: builds with 0 warnings on both TFMs. Tests done: DI, geometry, validation, autocomplete, searching, details (incl. photos).
+- **Solution build** (`dotnet build AarxMaps.sln`, what CI runs on tags) fails only because of Routes (4 errors, `IMapsJsonSerializer`). Fixed in Phase 3; the publish workflow only runs on `v*` tags.
 - **Routes** (not touched): `DistanceMatrixService` depends on the removed `IMapsJsonSerializer`; DI references Core's internal `MapsCoreMarker` and still says `D3lg4doMaps.Core`.
 
 ## Next steps
 
 ### Phase 2 - Places
 
-**Done (2026-10-20 to 2026-10-22):** Autocomplete, Searching and Details reviewed and fixed; Places builds on both TFMs. Details are in Critical decisions below. Everything left for the phase:
+**Done (2026-10-20 to 2026-10-22):** Autocomplete, Searching and Details reviewed and fixed; Places tests written; pre-release cleanup done. Details are in Critical decisions below.
 
-1. **Places tests** - done 2026-10-22, one module at a time (plan below):
-   - [x] 1. Helpers + DI (`Places/Helpers/{PlacesTestServices,PlacesFixtures}`, `Places/Extensions/DependencyInjectionTests`)
-   - [x] 2. Geometry + shared validation (`Places/Factories/GeoFactoryTests`, `Places/Validation/RequestValidatorTests`, plus `Core/Models/LatLngTests`). Rules are tested directly on the internals; each builder module adds only wiring tests.
-   - [x] 3. Autocomplete (`Places/Autocomplete/`: builder, factory, mapper, service, wire). New shared helpers: `ApiClientCapture` (NSubstitute client, records request + `ct`), `CoreErrors` (Core exceptions by name for theories), `RecordingHttp` (MockHttp that records method/URI/headers/body). Wire bodies are compared with `JsonNode.DeepEquals`.
-   - [x] 4. Searching (`Places/Searching/`: Text and Nearby builders, factory, mapper, service, wire). Fixtures `SearchTextPage`, `SearchNearbyPage`.
-   - [x] 5. Details, split in two:
-     - [x] 5a. Details, Reviews and Raw (`Places/Details/`: builder, factory, mapper, service, wire). Fixtures `DetailsFull`, `ReviewsFull`. Wire test confirmed the escaped place ID (`%2F`) survives Core's URI builder.
-     - [x] 5b. Photos (`PhotoOptionsBuilderTests` plus photo sections in the Details factory/mapper/service/wire tests). Parallel media calls are tested deterministically (`TaskCompletionSource`, 5 s `WaitAsync` guard); 30 repeated runs, 0 failures. Mutation-checked: removing sibling cancellation and moving the key to the query both fail the suite.
-2. **Before release** (not blocking tests):
-   - CA1724: rename `DependencyInjection` to `*ServiceCollectionExtensions` in Places and Core (and Routes in Phase 3).
-   - Core's pre-existing analyzer warnings (CA1032, CA2007, CA1062, CS1591 in exceptions and `MapsApiClientExtensions`); the zero-warnings rule isn't met by Core yet.
-   - Caching docs: Google's terms restrict caching most Places content beyond place IDs; say so on `AddAarxMaps*Cache`.
-3. **Optional:** rectangle bias/restriction on `AutocompleteRequestBuilder` (Google supports it); expose autocomplete match start offset; share `LocalizedTextDto` between Searching and Details.
+1. [x] **Places tests** (module by module, each with a peek + plan first): DI, geometry + validation, Autocomplete, Searching, Details (5a details/reviews/raw, 5b photos). Photo concurrency tests are deterministic (30 repeated runs, 0 failures) and mutation-checked.
+2. [x] **Pre-release cleanup:**
+   - CA1724: `DependencyInjection` renamed to `MapsServiceCollectionExtensions` (Core, `MapsServiceCollectionExtensions.cs` + `.Caching.cs`) and `PlacesServiceCollectionExtensions` (Places). Routes is renamed in Phase 3.
+   - Core analyzer backlog: CA2007 (`await using` now `ConfigureAwait(false)` via `xLifetime` locals), CA1062 (`SendAndEnumerateAsync` null check, documented), CS1591 (exception constructors documented), CA1308 (`#pragma` with reason in `RequestFingerprintCacheKeyStrategy`), CA1032 (suppressed, see Critical decisions).
+   - Caching docs: `AddAarxMapsMemoryCache` / `AddAarxMapsDistributedCache` now say Google's terms restrict caching (Places: only place IDs may be stored indefinitely) and that expirations are the consumer's responsibility.
+3. **Next:** open PR #2 (`Phase2: Places Module`), merge to `main`.
+4. **Optional (post-v1):** rectangle bias/restriction on `AutocompleteRequestBuilder` (Google supports it); expose autocomplete match start offset; share `LocalizedTextDto` between Searching and Details.
 
-### Places test plan
+### Places test layout (reference for Routes tests)
 
-**Setup.** The test project already references Places, and Places exposes internals to `DynamicProxyGenAssembly2`. Reuse the Core helpers (`TestServices.Create()`, `TestRequests`, `TestServices.ValidConfig`) and put Places-only helpers and JSON fixtures under `AarxMaps.Tests/Places/Helpers/`. Traits: `Package=Places`, `Module=<test folder>` (`Extensions`, `Factories`, `Validation`, `Autocomplete`, `Searching`, `Details`), `Type=<class>`.
-
-**Two levels:**
-- **Unit (NSubstitute `IMapsApiClient`)**: capture the `MapsApiRequest` and return DTOs. Assert method, endpoint, headers, query, `Cacheable` and `ct` propagation, plus mapping.
-- **Wire (MockHttp through the real `MapsApiClient`, built via `TestServices.Create().AddAarxMapsPlaces()` plus `services.AddHttpClient(nameof(MapsApiClient)).ConfigurePrimaryHttpMessageHandler(() => mock)`, the pattern in `CacheDependencyInjectionTests.BuildEndToEnd`)**: needed where the public request model is the payload (Autocomplete, Text, Nearby). Assert the serialized JSON body, not the C# object, plus JSON fixtures -> public model. Also the only way to prove the photo API key travels in the `X-Goog-Api-Key` header and never in the URL.
-
-**What to assert** (values verified against Google's reference; see Critical decisions):
-- **DI (`AddAarxMapsPlaces`)**: without `AddAarxMaps()` it throws `MapsApiException` naming `AddAarxMaps()`; with Core it registers the 4 services as transient; `BuildStrict` resolves `IPlacesService` and its three properties.
-- **Geometry (`GeoFactory` via builders)**: unequal, non-zero lat/lng land in the right fields (regression for the old swap); radius bounds (0, 50 000]; null center or corners; rectangle south-west latitude <= north-east latitude, with antimeridian-crossing longitudes allowed.
-- **Shared validation (`RequestValidator` via builders)**: session token 1-36 chars of `[A-Za-z0-9_-]`; required text trimmed, empty or whitespace rejected.
-- **Autocomplete**:
-  - Request: POST `places:autocomplete`, the field mask from `AutocompleteFactory`, body `{"input":..,"locationBias":{"circle":{"center":{"latitude":..,"longitude":..},"radius":..}}}`, nulls omitted, `sessionToken` sent.
-  - Builder: bias + restriction together throws; up to 5 primary types, copied and trimmed (mutating the caller's list after `Build()` doesn't change the request).
-  - Mapper: entries without `placePrediction` (query predictions) skipped; `EndOffset` from `text.matches[0].endOffset` or null; `{}` response -> empty list.
-- **Searching**:
-  - Text: POST `places:searchText`, mask with `nextPageToken`; restriction serializes as `rectangle {low, high}`; bias accepts circle or rectangle; `pageSize` default 20, range 1-20; empty page token rejected.
-  - Nearby: POST `places:searchNearby`, mask without `nextPageToken`; `locationRestriction.circle`; `maxResultCount` default 20.
-  - Mapper: places missing `id` or `displayName.text` skipped; `Types` is a copy (not the DTO's list).
-- **Details**:
-  - Endpoint: GET `places/{escaped id}` (an ID containing `/` or `?` is escaped); `sessionToken` as a query parameter only when set.
-  - Caching: details and reviews requests `Cacheable = true`; the photos request and every media request `Cacheable = false`; raw requests not cacheable when the fields contain `photos`, `photos.*` or `*`.
-  - Raw fields: trimmed and de-duplicated; null, empty or blank field throws `MapsInvalidRequestException`.
-  - Photos: media request `GET {photo.name}/media?skipHttpRedirect=true&maxHeightPx=..&maxWidthPx=..`; `MaxPhotos` caps the media calls; nameless photos skipped; when one media call fails, the others see their token cancelled and the exception propagates; defaults 10 photos / 480 px, limits 1-10 and 1-4800.
-  - Mapper: `timeZone.id` -> `TimeZone`; `priceLevel` enum strings -> `PriceLevel` (unknown -> null); invalid URI strings -> null (no `UriFormatException`); rating-only reviews kept with `Text = null`; entries with neither text nor rating skipped; `publishTime` parsed, invalid -> null; review summary maps `disclosureText` and `flagContentUri`; absent arrays -> empty, absent objects -> null; `GoogleMapsLinks` never null.
-- **Every service**: null request -> `ArgumentNullException`; the caller's `ct` reaches `IMapsApiClient`; Core exceptions (404 -> `MapsNotFoundException`, ...) propagate unchanged.
+- `AarxMaps.Tests/Places/{Extensions,Factories,Validation}/` for cross-cutting internals; `Places/Services/{Autocomplete,Searching,Details}/` per feature. Traits: `Package=Places`, `Module=<first folder>` (`Extensions`, `Factories`, `Validation`, `Services`), `Type=<class>`. Filter one feature with `--filter "FullyQualifiedName~Places.Services.Details"`.
+- One class per type (`<Type>Tests`) plus `<Feature>WireTests` for anything that needs the real `MapsApiClient` (serialized body, URL, headers, caching end to end).
+- Helpers (`Places/Helpers/`): `PlacesTestServices` (`Create`, `UseMockHttp`, `BuildWire`), `ApiClientCapture` (NSubstitute `IMapsApiClient`, records request + `ct`, thread-safe), `RecordingHttp` (MockHttp that records method/URI/headers/body), `CoreErrors` (Core exceptions by name for theories), `PlacesFixtures` (inline Google responses).
+- Mappers are tested through `MapsJsonSerializer` so DTO binding to Google's camelCase shape is covered too. Shared rules (`GeoFactory`, `RequestValidator`) are tested directly; builders only get wiring tests.
 
 ### Phase 3 - Routes
 
@@ -117,6 +91,9 @@ Last updated: 2026-10-22
 - **NaN is rejected explicitly (2026-10-22)**: `LatLng` (lat/lng) and `GeoFactory` (radius) check `double.IsNaN` before the range pattern. Infinity is already outside the ranges.
 - **`DetailsMapper.ToLatLng` stays unguarded (2026-10-22)**: it builds `LatLng` from Google's response, so an out-of-range value would throw `MapsInvalidRequestException`. Not reachable in practice (JSON can't carry NaN, Google never sends out-of-range coordinates), so no defensive handling.
 - **Response URIs are http/https only (2026-10-22)**: `DetailsMapper.ToUri` returns `null` for anything else (`javascript:`, `file:`, and Unix paths that `Uri.TryCreate` turns into `file:///`). Public `Uri` properties are safe to render as links.
+- **CA1032 suppressed for SDK exceptions (2026-10-22)**: one constructor with optional parameters (`message, status, response, inner`) covers `new X()`, `new X(msg)` and `new X(msg, inner: ex)`; the three standard overloads would only duplicate it. Scoped rule in the root `.editorconfig` (`AarxMaps.Core/src/Public/Exceptions/*.cs`), reason in a comment.
+- **DI extension class names (2026-10-22)**: `MapsServiceCollectionExtensions` (Core, partial across `.cs` and `.Caching.cs`), `PlacesServiceCollectionExtensions` (Places); Routes follows the pattern in Phase 3. Test classes keep their feature names (`DependencyInjectionTests`, `CacheDependencyInjectionTests`).
+- **No `.gitattributes` (2026-10-22)**: every tracked file is LF; line endings are left to editor settings.
 - **Module DI checks use `IsAarxMapsRegistered()` (2026-10-22)**: Core's marker stays `internal`; modules never reference Core internals.
 - **Places tests (2026-10-22)**: Claude writes the test code for Places (exception to the reviewer role; the user reads it afterwards). One module at a time, each starting with a peek + action plan before any test is written. JSON fixtures are inline raw string literals in helper classes, not files.
 - **Test layout (2026-10-22)**: one test class per type (`<Type>Tests`) plus a `<Feature>WireTests` class per feature for everything that needs the real `MapsApiClient` (serialized body, headers, URL). The `Module` trait is the test folder name.

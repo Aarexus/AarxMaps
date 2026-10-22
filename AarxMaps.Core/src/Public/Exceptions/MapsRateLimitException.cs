@@ -17,6 +17,14 @@ public class MapsRateLimitException : MapsApiException {
     /// </summary>
     public TimeSpan? RetryAfter { get; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MapsRateLimitException"/> class.
+    /// </summary>
+    /// <param name="message">The error message, or <c>null</c> to use the default message.</param>
+    /// <param name="status">The HTTP status code returned by the Maps API, if any.</param>
+    /// <param name="response">The raw response body returned by the Maps API, if any.</param>
+    /// <param name="retryAfter">How long Google asked the caller to wait before retrying (the <c>Retry-After</c> header), if sent.</param>
+    /// <param name="inner">The exception that caused this one, if any.</param>
     public MapsRateLimitException(
         string? message = null,
         HttpStatusCode? status = null,

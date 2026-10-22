@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 
 namespace AarxMaps.Core.Extensions;
 
-public static partial class DependencyInjection {
+public static partial class MapsServiceCollectionExtensions {
     /// <summary>
     /// Registers an in-memory caching layer for AarxMaps using <see cref="IMemoryCache"/>.
     /// </summary>
@@ -35,6 +35,13 @@ public static partial class DependencyInjection {
     /// <para>
     /// This layer only applies to standard request/response endpoints. Streaming endpoints such as
     /// Compute Route Matrix (<c>DistanceMatrixService</c>) are never cached.
+    /// </para>
+    /// <para>
+    /// <b>Google's terms:</b> Google Maps Platform restricts caching of its content. The Places API
+    /// policies forbid pre-fetching, caching or storing Places content beyond the exceptions in
+    /// Google's terms; place IDs are exempt and may be stored indefinitely. Before enabling a cache
+    /// layer, check the terms for every API you call and set the <see cref="MapsCachingOptions"/>
+    /// expirations to match. Places photo requests are never cached by the SDK.
     /// </para>
     /// <para>
     /// Requires <c>AddAarxMaps()</c> to be registered beforehand.
@@ -92,6 +99,13 @@ public static partial class DependencyInjection {
     /// <para>
     /// This layer only applies to standard request/response endpoints. Streaming endpoints such as
     /// Compute Route Matrix (<c>DistanceMatrixService</c>) are never cached.
+    /// </para>
+    /// <para>
+    /// <b>Google's terms:</b> Google Maps Platform restricts caching of its content. The Places API
+    /// policies forbid pre-fetching, caching or storing Places content beyond the exceptions in
+    /// Google's terms; place IDs are exempt and may be stored indefinitely. Before enabling a cache
+    /// layer, check the terms for every API you call and set the <see cref="MapsCachingOptions"/>
+    /// expirations to match. Places photo requests are never cached by the SDK.
     /// </para>
     /// <para>
     /// Requires <c>AddAarxMaps()</c> to be registered beforehand, and an
