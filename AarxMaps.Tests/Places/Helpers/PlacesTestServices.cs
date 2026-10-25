@@ -1,4 +1,3 @@
-using AarxMaps.Core.Internal.Http;
 using AarxMaps.Places.Common.Extensions;
 using AarxMaps.Tests.Core.Helpers;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,12 +11,6 @@ internal static class PlacesTestServices {
     public static ServiceCollection Create() {
         var services = TestServices.Create();
         services.AddAarxMapsPlaces();
-        return services;
-    }
-
-    /// <summary>Routes the real MapsApiClient through <paramref name="mock"/> instead of the network.</summary>
-    public static IServiceCollection UseMockHttp(this IServiceCollection services, MockHttpMessageHandler mock) {
-        services.AddHttpClient(nameof(MapsApiClient)).ConfigurePrimaryHttpMessageHandler(() => mock); // same name AddHttpClient<MapsApiClient> uses
         return services;
     }
 

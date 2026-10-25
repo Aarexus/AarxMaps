@@ -1,22 +1,21 @@
 # AarxMaps - Progress
 
-Last updated: 2026-10-22
+Last updated: 2026-10-24
 
 ## Current status
 
-| Phase | Scope          | Status                                                            |
-| ----- | -------------- | ----------------------------------------------------------------- |
-| 1     | Core module    | Done, merged (#1). 611 tests passing on net8.0 and net9.0 (Phase 2 additions: `Cacheable`, `IsAarxMapsRegistered`). |
+| Phase | Scope          | Status                                                                                                                                  |
+| ----- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | Core module    | Done, merged (#1). 611 tests passing on net8.0 and net9.0 (Phase 2 additions: `Cacheable`, `IsAarxMapsRegistered`).                 |
 | 2     | Places module  | Done on `Phase2-Places`, ready for PR #2. Core and Places build with 0 warnings on net8.0 + net9.0; 1,032 tests passing (407 Places). |
-| 3     | Routes module  | Not started. **Does not build** against the new Core.       |
-| 4     | Docs + release | Not started. Docusaurus `docs/`, README rewrite, 1.0.0 publish. |
+| 3     | Routes module  | Implemented on `Phase3-RoutesModule` (2026-10-24), awaiting the user's read-through. Solution builds with 0 warnings on net8.0 + net9.0; 1,284 tests passing (252 Routes). |
+| 4     | Docs + release | Not started. Docusaurus `docs/`, README rewrite, 1.0.0 publish.                                                                       |
 
-### Build state (2026-10-22)
+### Build state (2026-10-24)
 
-- **Core**: builds with 0 warnings on both TFMs (analyzer backlog cleared 2026-10-22).
-- **Places**: builds with 0 warnings on both TFMs. Tests done: DI, geometry, validation, autocomplete, searching, details (incl. photos).
-- **Solution build** (`dotnet build AarxMaps.sln`, what CI runs on tags) fails only because of Routes (4 errors, `IMapsJsonSerializer`). Fixed in Phase 3; the publish workflow only runs on `v*` tags.
-- **Routes** (not touched): `DistanceMatrixService` depends on the removed `IMapsJsonSerializer`; DI references Core's internal `MapsCoreMarker` and still says `D3lg4doMaps.Core`.
+- **Solution build** (`dotnet build AarxMaps.sln`, what CI runs on tags): 0 warnings, 0 errors on both TFMs.
+- **Core**, **Places**: unchanged since 2026-10-22.
+- **Routes**: rewritten in Phase 3 (Directions + DistanceMatrix). The user's pre-rewrite sources were untracked in git; a copy was kept in the session scratchpad only, so it is gone once the session ends.
 
 ## Next steps
 
@@ -24,27 +23,31 @@ Last updated: 2026-10-22
 
 **Done (2026-10-20 to 2026-10-22):** Autocomplete, Searching and Details reviewed and fixed; Places tests written; pre-release cleanup done. Details are in Critical decisions below.
 
-1. [x] **Places tests** (module by module, each with a peek + plan first): DI, geometry + validation, Autocomplete, Searching, Details (5a details/reviews/raw, 5b photos). Photo concurrency tests are deterministic (30 repeated runs, 0 failures) and mutation-checked.
-2. [x] **Pre-release cleanup:**
-   - CA1724: `DependencyInjection` renamed to `MapsServiceCollectionExtensions` (Core, `MapsServiceCollectionExtensions.cs` + `.Caching.cs`) and `PlacesServiceCollectionExtensions` (Places). Routes is renamed in Phase 3.
-   - Core analyzer backlog: CA2007 (`await using` now `ConfigureAwait(false)` via `xLifetime` locals), CA1062 (`SendAndEnumerateAsync` null check, documented), CS1591 (exception constructors documented), CA1308 (`#pragma` with reason in `RequestFingerprintCacheKeyStrategy`), CA1032 (suppressed, see Critical decisions).
-   - Caching docs: `AddAarxMapsMemoryCache` / `AddAarxMapsDistributedCache` now say Google's terms restrict caching (Places: only place IDs may be stored indefinitely) and that expirations are the consumer's responsibility.
+1. [X] **Places tests** (module by module, each with a peek + plan first): DI, geometry + validation, Autocomplete, Searching, Details (5a details/reviews/raw, 5b photos). Photo concurrency tests are deterministic (30 repeated runs, 0 failures) and mutation-checked.
+2. [X] **Pre-release cleanup:**
+    - CA1724: `DependencyInjection` renamed to `MapsServiceCollectionExtensions` (Core, `MapsServiceCollectionExtensions.cs` + `.Caching.cs`) and `PlacesServiceCollectionExtensions` (Places). Routes is renamed in Phase 3.
+    - Core analyzer backlog: CA2007 (`await using` now `ConfigureAwait(false)` via `xLifetime` locals), CA1062 (`SendAndEnumerateAsync` null check, documented), CS1591 (exception constructors documented), CA1308 (`#pragma` with reason in `RequestFingerprintCacheKeyStrategy`), CA1032 (suppressed, see Critical decisions).
+    - Caching docs: `AddAarxMapsMemoryCache` / `AddAarxMapsDistributedCache` now say Google's terms restrict caching (Places: only place IDs may be stored indefinitely) and that expirations are the consumer's responsibility.
+
 3. **Next:** open PR #2 (`Phase2: Places Module`), merge to `main`.
 4. **Optional (post-v1):** rectangle bias/restriction on `AutocompleteRequestBuilder` (Google supports it); expose autocomplete match start offset; share `LocalizedTextDto` between Searching and Details.
 
-### Places test layout (reference for Routes tests)
+### Test layout (Places and Routes)
 
 - `AarxMaps.Tests/Places/{Extensions,Factories,Validation}/` for cross-cutting internals; `Places/Services/{Autocomplete,Searching,Details}/` per feature. Traits: `Package=Places`, `Module=<first folder>` (`Extensions`, `Factories`, `Validation`, `Services`), `Type=<class>`. Filter one feature with `--filter "FullyQualifiedName~Places.Services.Details"`.
 - One class per type (`<Type>Tests`) plus `<Feature>WireTests` for anything that needs the real `MapsApiClient` (serialized body, URL, headers, caching end to end).
-- Helpers (`Places/Helpers/`): `PlacesTestServices` (`Create`, `UseMockHttp`, `BuildWire`), `ApiClientCapture` (NSubstitute `IMapsApiClient`, records request + `ct`, thread-safe), `RecordingHttp` (MockHttp that records method/URI/headers/body), `CoreErrors` (Core exceptions by name for theories), `PlacesFixtures` (inline Google responses).
+- Shared helpers (`Core/Helpers/`, moved there from `Places/Helpers/` on 2026-10-24 so Routes can reuse them): `TestServices.UseMockHttp`, `ApiClientCapture` (NSubstitute `IMapsApiClient`, records request + `ct`, thread-safe; `RespondStream`/`FailStream`/`HandleStream` for `SendStreamAsync`), `RecordingHttp` (MockHttp that records method/URI/headers/body), `CoreErrors` (Core exceptions by name for theories).
+- Module helpers: `Places/Helpers/` (`PlacesTestServices`, `PlacesFixtures`), `Routes/Helpers/` (`RoutesTestServices`, `RoutesFixtures`, `RoutesSamples`).
+- Routes folders: `Routes/{Extensions,Common,Validation}/`, `Routes/Services/{Directions,DistanceMatrix}/`.
 - Mappers are tested through `MapsJsonSerializer` so DTO binding to Google's camelCase shape is covered too. Shared rules (`GeoFactory`, `RequestValidator`) are tested directly; builders only get wiring tests.
 
 ### Phase 3 - Routes
 
-- Replace the `MapsCoreMarker` check in `AddAarxMapsRoutes` with `services.IsAarxMapsRegistered()` and fix its `D3lg4doMaps.Core` message.
+**Done (2026-10-24):** public API review, model spec, then the full module implemented by Claude at the user's request (see Critical decisions): Directions and DistanceMatrix end to end (public models, builders, shared validator, DTOs, mappers, field masks, services, DI) plus 252 tests. Seven targeted mutations (ordering, false flags in the body, timestamp format, arrival-time rule, empty status, shared lists, place ID/address counting) were all caught.
 
-- Migrate `DistanceMatrixService` to `SendAndEnumerateAsync<T>`; drop `IMapsJsonSerializer`.
-- Audit against the same checklist as Places (cancellation, validation, mappers, tests, XML docs).
+1. **Next:** user reads the Routes code and tests; fix anything found.
+2. Open PR #3 (`Phase3: Routes Module`) once PR #2 is merged.
+3. **Optional (post-v1):** `extraComputations` (`TRAFFIC_ON_POLYLINE` -> speed intervals, `TOLLS` -> toll info), `AvoidTunnels`, `geocodingResults` for address waypoints, transit headway/agency phone, a streaming `IAsyncEnumerable` matrix method, encoded-polyline decoding helper.
 
 ### Phase 4 - Docs + release
 
@@ -54,7 +57,7 @@ Last updated: 2026-10-22
 
 ## Known flaws (accepted for v1)
 
-- **`languageCode` / `regionCode` are never sent to Places (found 2026-10-22).** Core only sends `Accept-Language: {Language}-{Region}` (`RequestFactory`). Google's Places (New) reference documents `languageCode` (default `en-US`) and `regionCode` as body fields (Autocomplete, Text, Nearby) and query parameters (Details), and says nothing about `Accept-Language`. So `MapsConfiguration.Region` has no documented effect on Places, and `Language` depends on undocumented header handling. Preferred fix after v1: Places services take `IOptions<MapsConfiguration>` and the factories fill both from config. Recheck the same for Routes in Phase 3.
+- **`languageCode` / `regionCode` are never sent to Places (found 2026-10-22).** Core only sends `Accept-Language: {Language}-{Region}` (`RequestFactory`). Google's Places (New) reference documents `languageCode` (default `en-US`) and `regionCode` as body fields (Autocomplete, Text, Nearby) and query parameters (Details), and says nothing about `Accept-Language`. So `MapsConfiguration.Region` has no documented effect on Places, and `Language` depends on undocumented header handling. Preferred fix after v1: Places services take `IOptions<MapsConfiguration>` and the factories fill both from config. Routes has the same flaw by decision (2026-10-24): its reference also documents `languageCode`/`regionCode` as body fields, and they are not sent.
 
 ## Critical decisions
 
@@ -97,6 +100,14 @@ Last updated: 2026-10-22
 - **Module DI checks use `IsAarxMapsRegistered()` (2026-10-22)**: Core's marker stays `internal`; modules never reference Core internals.
 - **Places tests (2026-10-22)**: Claude writes the test code for Places (exception to the reviewer role; the user reads it afterwards). One module at a time, each starting with a peek + action plan before any test is written. JSON fixtures are inline raw string literals in helper classes, not files.
 - **Test layout (2026-10-22)**: one test class per type (`<Type>Tests`) plus a `<Feature>WireTests` class per feature for everything that needs the real `MapsApiClient` (serialized body, headers, URL). The `Module` trait is the test folder name.
+- **Routes v1 scope (2026-10-24)**: transit steps carry a minimal `TransitDetails` (stops, UTC + localized times, headsign, stop count, line name/short name/colors/vehicle type, agencies). Waypoints accept place ID, location or address (exactly one). No `extraComputations` in v1, so `SpeedReadingIntervals`, `TollInfo`, leg/step travel advisories and `AvoidTunnels` are dropped. `languageCode`/`regionCode` are not sent as body fields; Routes relies on Core's `Accept-Language` header like Places (same known flaw, fix both post-v1).
+- **Routes model rules (2026-10-24)**: single-field Google wrappers are flattened (`Polyline` -> `EncodedPolyline`, `StepsOverview` -> `Segments`, `VehicleInfo` -> `EmissionType`, `LocalizedText` -> `string`). Durations are `TimeSpan`, timestamps `DateTimeOffset`. Proto3-omitted ints/bools map to non-null types defaulting to 0/false. `Unknown` (first member, value 0) only on enums Google returns; request-only enums have no `Unknown`. Shared request rules (travel-mode dependent fields) live in an internal Routes validator used by both builders.
+- **Routes code ownership (2026-10-24)**: the user asked Claude to write and own the Routes module code (exception to the reviewer role, like the Places tests). The user reads it afterwards.
+- **Routes public API (2026-10-24)**: shared types live in one namespace, `AarxMaps.Routes.Common.Models` (waypoints, `WaypointBuilder`, `RouteModifiers`, `TransitPreferences`, shared enums and response types); DI in `AarxMaps.Routes.Common.Extensions` (`RoutesServiceCollectionExtensions`, idempotent `TryAddTransient` like Places); features in `AarxMaps.Routes.Services.Directions` / `.DistanceMatrix`. `ComputeRoute` renamed `Route`; `RouteResult.BestRoute` dropped (use `RouteLabel.DefaultRoute`); `PolylineEncoding` dropped (encoded only); `RouteMatrixDestination` flattened to `Waypoint`; `RouteMatrixOrigin` built only by the builder (`AddOrigin(waypoint, modifiers?)`, `WithOrigins(waypoints, modifiers?)`).
+- **Routes builder rules (2026-10-24)**: `RoutesRequestValidator` (shared) enforces: departure xor arrival; arrival only for Transit; routing preference only for Drive/TwoWheeler; traffic model only for Drive + TrafficAwareOptimal; transit preferences only for Transit; heading/stopover/side of road only for Drive/TwoWheeler; no via on origins/destinations. Directions adds: max 25 intermediates, no via with waypoint optimization, optimization needs intermediates. Matrix adds: origins x destinations <= 625 (100 with TrafficAwareOptimal or Transit), <= 50 waypoints given as place ID or address. Unset travel mode counts as Drive. Not validated (documented only): past departure times (clock-dependent), transit 7-day/100-day window, modifiers that Google ignores for the mode.
+- **Routes wire format (2026-10-24)**: request bodies are internal DTOs (`ComputeRoutesPayload`, `ComputeRouteMatrixPayload`), never the public models. Enums go through `WireEnum<T>` (SCREAMING_SNAKE_CASE of the member name; unknown values read as `Unknown`; undefined values throw `MapsInvalidRequestException`), so public enum member names are part of the wire contract and `WireEnumTests` pins every value. Timestamps are sent as UTC `yyyy-MM-ddTHH:mm:ssZ`. `false` flags and empty lists are left out of the body.
+- **Routes field masks (2026-10-24)**: Directions Summary = route totals + labels/description/warnings/advisory/localized values + `optimizedIntermediateWaypointIndex` (in every level, since Google rejects optimization without it) + `fallbackInfo`; Standard adds polyline, viewport and per-leg totals; Full adds the route token and whole legs. Matrix Summary = indices, status, condition, distance, duration, fallback; Standard adds static duration and localized values; Full adds the travel advisory.
+- **Matrix results (2026-10-24)**: `GetDistancesAsync` buffers the stream and returns elements sorted by origin then destination. `Status` is `null` for successful elements (Google sends `"status": {}`). Never cached (streaming path).
 - **Tracking split**: `CLAUDE.md` for stable guidance, `PROGRESS.md` for status/decisions/lessons.
 
 ## Lessons learned
@@ -122,5 +133,13 @@ Last updated: 2026-10-22
 **`Uri.TryCreate(value, UriKind.Absolute, ...)` is platform-dependent and scheme-agnostic.** On Linux/macOS `"/path"` becomes `file:///path`; `javascript:`, `file:`, `mailto:` are all accepted everywhere. When a URI comes from outside and is meant as a web link, also check `Scheme` is `https`/`http`.
 
 **Test parallel code without sleeps.** Gate each fake call on a `TaskCompletionSource` that completes once every call has started, and wrap the call under test in `WaitAsync(timeout)` so a regression fails fast instead of hanging the run.
+
+**Proto3 JSON may omit zero values.** Google's protobuf-backed APIs can drop `0`, `false` and `""` from responses (e.g. `stepStartIndex` of the first segment). Map value-type response fields to non-null types defaulting to `0`/`false`, never `int?`. Correction (2026-10-24): matrix `originIndex`/`destinationIndex` are sent explicitly even when 0 (Google's sample shows them), so the review's "index 0 is lost" claim was wrong; the non-null `int` mapping is still right.
+
+**Verify review claims against Google's own samples before recording them.** The reference pages are summarized by tools and can mislead; the guide samples show the real wire shape.
+
+**DateTimeOffset's default JSON format writes 7 fractional digits**, and Google only accepts 0, 3, 6 or 9. Format timestamps explicitly before sending them.
+
+**Google's request fields carry cross-field rules that the reference lists per field** (e.g. `routingPreference` only for DRIVE/TWO_WHEELER, `arrivalTime` only for TRANSIT and otherwise silently ignored, `via` only on intermediates). Read each field's full description, not just its type.
 
 **Moving files without updating namespaces** cascades into dozens of errors; rebuild after every structural move.
