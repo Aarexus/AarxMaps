@@ -6,6 +6,7 @@ using AarxMaps.Core.Models;
 using AarxMaps.Places.Internal.Services.Details;
 using AarxMaps.Places.Internal.Services.Details.DTOs;
 using AarxMaps.Places.Services.Details;
+using AarxMaps.Tests.Core.Helpers;
 using AarxMaps.Tests.Places.Helpers;
 using FluentAssertions;
 

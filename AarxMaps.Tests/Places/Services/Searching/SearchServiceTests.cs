@@ -3,6 +3,7 @@ using AarxMaps.Core.Models.Geometry;
 using AarxMaps.Places.Internal.Services.Searching;
 using AarxMaps.Places.Internal.Services.Searching.DTOs;
 using AarxMaps.Places.Services.Searching;
+using AarxMaps.Tests.Core.Helpers;
 using AarxMaps.Tests.Places.Helpers;
 using FluentAssertions;
 

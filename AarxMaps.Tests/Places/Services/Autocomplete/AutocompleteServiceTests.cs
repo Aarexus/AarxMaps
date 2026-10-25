@@ -2,6 +2,7 @@ using AarxMaps.Core.Internal.Json;
 using AarxMaps.Places.Internal.Services.Autocomplete;
 using AarxMaps.Places.Internal.Services.Autocomplete.DTOs;
 using AarxMaps.Places.Services.Autocomplete;
+using AarxMaps.Tests.Core.Helpers;
 using AarxMaps.Tests.Places.Helpers;
 using FluentAssertions;
 

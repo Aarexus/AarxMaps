@@ -1,6 +1,8 @@
 using AarxMaps.Core.Configuration; // TODO: adjust namespace of MapsConfiguration
 using AarxMaps.Core.Extensions;
+using AarxMaps.Core.Internal.Http;
 using Microsoft.Extensions.DependencyInjection;
+using RichardSzalay.MockHttp;
 
 namespace AarxMaps.Tests.Core.Helpers;
 
@@ -31,4 +33,10 @@ internal static class TestServices {
     /// <summary>Provider with the strictest options: scope validation and build-time graph validation.</summary>
     public static ServiceProvider BuildStrict(IServiceCollection services)
         => services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
+
+    /// <summary>Routes the real MapsApiClient through <paramref name="mock"/> instead of the network.</summary>
+    public static IServiceCollection UseMockHttp(this IServiceCollection services, MockHttpMessageHandler mock) {
+        services.AddHttpClient(nameof(MapsApiClient)).ConfigurePrimaryHttpMessageHandler(() => mock); // same name AddHttpClient<MapsApiClient> uses
+        return services;
+    }
 }

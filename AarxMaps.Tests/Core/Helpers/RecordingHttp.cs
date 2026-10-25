@@ -3,7 +3,7 @@ using System.Net;
 using System.Text;
 using RichardSzalay.MockHttp;
 
-namespace AarxMaps.Tests.Places.Helpers;
+namespace AarxMaps.Tests.Core.Helpers;
 
 /// <summary>What reached the wire. The body is read inside the handler, before the client disposes the request.</summary>
 internal sealed record RecordedRequest(

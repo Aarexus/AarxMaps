@@ -1,10 +1,10 @@
 using System.Net;
 using AarxMaps.Core.Exceptions;
 
-namespace AarxMaps.Tests.Places.Helpers;
+namespace AarxMaps.Tests.Core.Helpers;
 
 /// <summary>
-/// Core exceptions a Places service must let through unchanged. Theories take the name
+/// Core exceptions a module service must let through unchanged. Theories take the name
 /// (serializable, one test case each) and build the exception with <see cref="Create"/>.
 /// </summary>
 internal static class CoreErrors {
