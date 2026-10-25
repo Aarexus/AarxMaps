@@ -56,6 +56,7 @@ Each project splits `src/` into:
 
 - `src/Public/` - the consumer-facing API. **The namespace drops the `Public` segment**: `src/Public/Models/MapsApiRequest.cs` -> `AarxMaps.Core.Models`.
 - **Feature folders (Places):** `src/Public/Services/<Feature>/{Builders,Models,Requests}` all share one flat namespace, `AarxMaps.Places.Services.<Feature>` (e.g. `AarxMaps.Places.Services.Searching`); subfolders don't add namespace segments. The matching internals live in `src/Internal/Services/<Feature>/` (`<Feature>Service`, `<Feature>Factory`, `<Feature>Mapper`), with wire DTOs under `DTOs/`. Shared geometry (`GeoCircle`, `GeoRectangle`, `LocationBias`, `LocationRestriction`) lives in `src/Public/Common/Models` (`AarxMaps.Places.Common.Models.Geometry`).
+- **Routes layout:** shared public types (waypoints, `WaypointBuilder`, modifiers, shared enums and response types) all live in `src/Public/Common/Models/**` with one flat namespace, `AarxMaps.Routes.Common.Models`. Features use `AarxMaps.Routes.Services.Directions` / `.DistanceMatrix` like Places. Internals: `Internal/Common/` (`WireEnum<T>`, `CommonMapper`, shared DTOs), `Internal/Validation/RoutesRequestValidator` (travel-mode rules shared by both builders), `Internal/Services/<Feature>/` (`<Feature>Factory` with the field masks, `<Feature>Mapper`, `<Feature>Service`, `DTOs/`). Request bodies are always internal DTOs; enum wire values come from `WireEnum<T>` (SCREAMING_SNAKE_CASE of the member name), so renaming a public enum member changes the wire value.
 - `src/Internal/` - implementation. Namespace keeps `Internal` (`AarxMaps.Core.Internal.Http`) and every type is `internal`.
 - `src/InternalsVisibleTo.cs` - exposes internals to `AarxMaps.Tests` and `DynamicProxyGenAssembly2` (NSubstitute).
 
@@ -120,7 +121,7 @@ Follows the existing code; match it.
 - Layout mirrors the package: `AarxMaps.Tests/<Package>/<Area>/<Type>Tests.cs`, namespace `AarxMaps.Tests.<Package>.<Area>`. Shared helpers in `AarxMaps.Tests/<Package>/Helpers/`.
 - Every test class carries traits: `[Trait("Package", "Core")]`, `[Trait("Module", "Http")]`, `[Trait("Type", "MapsApiClient")]`.
 - No live Google calls, no real API keys. Use MockHttp handlers and JSON fixtures.
-- The test project references Core and Places. Add the Routes `ProjectReference` when its tests land. Core helpers (`AarxMaps.Tests/Core/Helpers`: `TestServices`, `TestRequests`) are reusable from other packages' tests.
+- The test project references Core, Places and Routes. Core helpers (`AarxMaps.Tests/Core/Helpers`: `TestServices` incl. `UseMockHttp`, `TestRequests`, `ApiClientCapture`, `RecordingHttp`, `CoreErrors`) are shared by every package's tests; module helpers live in `<Package>/Helpers/`.
 
 ## CI / release
 
