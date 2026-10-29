@@ -9,8 +9,8 @@ namespace AarxMaps.Core.Models.Geometry;
 /// This model is used throughout the SDK to represent locations returned by
 /// Google Maps APIs or provided as input for geographic queries.
 ///
-/// Instances are created internally by the SDK to ensure coordinate validity
-/// and consistency across modules.
+/// Create instances with the public constructor. It validates both values, so every
+/// instance holds an in-range coordinate.
 /// </remarks>
 public sealed class LatLng {
     /// <summary>

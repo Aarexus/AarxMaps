@@ -48,3 +48,9 @@ obj/
 
 .DS_Store
 .cache/
+
+# ----------------
+# EXTRAS
+# ----------------
+WebTests/
+BrandKit/
