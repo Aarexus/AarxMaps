@@ -8,7 +8,7 @@ Strongly typed .NET SDK for Google Maps Platform, shipped as three NuGet package
 
 The user writes the code; Claude reviews it. The unit of work is a whole workflow or module (for example, all of Places Autocomplete: builders, request models, services, DTOs, mappers, DI, tests).
 
-- **Do not write or edit code unless the user explicitly asks.** That covers source, tests and snippets. Reviews describe the problem and the fix in words, pointing to `file:line`. Doc files (`CLAUDE.md`, `PROGRESS.md`, `DOC-PLAN.md`) are the exception and stay up to date. The Docusaurus site under `docs/` is also written by Claude and read by the user (plan in `DOC-PLAN.md`).
+- **Do not write or edit code unless the user explicitly asks.** That covers source, tests and snippets. Reviews describe the problem and the fix in words, pointing to `file:line`. Doc files (`CLAUDE.md`, `PROGRESS.md`, `DOC-PLAN.md`, `RELEASE-PLAN.md`) are the exception and stay up to date. The 1.0.0 release is tracked step by step in `RELEASE-PLAN.md`. The Docusaurus site under `docs/` is also written by Claude and read by the user (plan in `DOC-PLAN.md`).
 - **Read the whole workflow before judging it.** Follow the call path end to end: builder -> request model -> service -> `IMapsApiClient` -> DTO -> mapper -> public model, plus DI registration and tests.
 - **Check against:**
   - Correctness: logic bugs, edge cases, null handling, coordinate order, field masks, payload shape compared with Google's API docs.

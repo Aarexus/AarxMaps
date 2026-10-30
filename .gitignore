@@ -54,3 +54,5 @@ obj/
 # ----------------
 WebTests/
 BrandKit/
+.playwright-mcp/
+*.pyc

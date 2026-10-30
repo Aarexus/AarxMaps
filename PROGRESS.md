@@ -1,15 +1,15 @@
 # AarxMaps - Progress
 
-Last updated: 2026-10-28
+Last updated: 2026-10-30
 
 ## Current status
 
 | Phase | Scope          | Status                                                                                                                                  |
 | ----- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | 1     | Core module    | Done, merged (#1). 611 tests passing on net8.0 and net9.0 (Phase 2 additions: `Cacheable`, `IsAarxMapsRegistered`).                 |
-| 2     | Places module  | Done on `Phase2-Places`, ready for PR #2. Core and Places build with 0 warnings on net8.0 + net9.0; 1,032 tests passing (407 Places). |
-| 3     | Routes module  | Implemented on `Phase3-RoutesModule` (2026-10-24), awaiting the user's read-through. Solution builds with 0 warnings on net8.0 + net9.0; 1,284 tests passing (252 Routes). |
-| 4     | Docs + release | In progress. README rewritten from the public API (2026-10-25), awaiting the user's read-through. Docusaurus `docs/` and 1.0.0 publish pending. |
+| 2     | Places module  | Done, merged (#2). Core and Places build with 0 warnings on net8.0 + net9.0; 1,032 tests passing (407 Places). |
+| 3     | Routes module  | Done, merged (#3). Solution builds with 0 warnings on net8.0 + net9.0; 1,284 tests passing (252 Routes). |
+| 4     | Docs + release | In progress on `Phase4-Docs`; docs tracked in `DOC-PLAN.md`, release in `RELEASE-PLAN.md`. Steps 0-8 done (2026-10-30): docs machine set up, DelgadoMaps name map, `docs/` restructured on Docusaurus 3.10.2, Aarexus branding plus NuGet icon, every docs page written (Introduction, Getting started, Core, Places, Routes, Known limitations, DelgadoMaps map) and the landing page (Ink hero), all verified. Step 9 done (2026-10-31): the user read the whole site, no findings. Next: `RELEASE-PLAN.md` (R1-R10: housekeeping, package metadata, workflows, docs deploy, README trim, pack + smoke test, nuget.org setup, tag `v1.0.0`, post-release). |
 
 ### Build state (2026-10-24)
 
@@ -45,7 +45,7 @@ Last updated: 2026-10-28
 
 **Done (2026-10-24):** public API review, model spec, then the full module implemented by Claude at the user's request (see Critical decisions): Directions and DistanceMatrix end to end (public models, builders, shared validator, DTOs, mappers, field masks, services, DI) plus 252 tests. Seven targeted mutations (ordering, false flags in the body, timestamp format, arrival-time rule, empty status, shared lists, place ID/address counting) were all caught.
 
-1. **Next:** user reads the Routes code and tests; fix anything found.
+1. **Next:** user reads the Routes code and tests; fix anything found. The `null`-handling nit found while writing the docs (2026-10-30) is accepted for v1 and tracked under Known flaws.
 2. Open PR #3 (`Phase3: Routes Module`) once PR #2 is merged.
 3. **Optional (post-v1):** `extraComputations` (`TRAFFIC_ON_POLYLINE` -> speed intervals, `TOLLS` -> toll info), `AvoidTunnels`, `geocodingResults` for address waypoints, transit headway/agency phone, a streaming `IAsyncEnumerable` matrix method, encoded-polyline decoding helper.
 
@@ -69,6 +69,7 @@ Last updated: 2026-10-28
 - **`languageCode` / `regionCode` are never sent to Places (found 2026-10-22).** Core only sends `Accept-Language: {Language}-{Region}` (`RequestFactory`). Google's Places (New) reference documents `languageCode` (default `en-US`) and `regionCode` as body fields (Autocomplete, Text, Nearby) and query parameters (Details), and says nothing about `Accept-Language`. So `MapsConfiguration.Region` has no documented effect on Places, and `Language` depends on undocumented header handling. Preferred fix after v1: Places services take `IOptions<MapsConfiguration>` and the factories fill both from config. Routes has the same flaw by decision (2026-10-24): its reference also documents `languageCode`/`regionCode` as body fields, and they are not sent.
 
 - **Response models have `internal` setters (accepted 2026-10-28).** Consumers can't build populated `PlaceDetails`, `RouteResult`, `RouteMatrixElement`, ... when mocking the services in their own tests. Post-v1: model factories or `init` setters.
+- **Inconsistent `null` handling in the Routes builders (accepted 2026-10-30, fix post-v1).** `RouteRequestBuilder.From(null)` / `To(null)` are accepted, and `Build()` then fails with "Origin is required. Call From() before Build()", which is misleading after a `From` call. `WithRouteModifiers(null)` and `WithTransitPreferences(null)` (both builders) silently clear the value. `AddIntermediate`, `AddOrigin` and `AddDestination` throw `MapsInvalidRequestException` on `null`. Fix: throw `MapsInvalidRequestException` on `null` in `From`/`To` (and decide whether the `With*` setters should too). A behavior change, so it goes in a planned release.
 - **Sliding cache expiration can't be turned off (accepted 2026-10-28).** `MapsCachingOptions.SlidingExpiration` is a non-nullable `TimeSpan` and is always applied.
 
 ## Critical decisions
@@ -123,11 +124,14 @@ Last updated: 2026-10-28
 - **README scope (2026-10-25)**: the README is the full usage guide (enough to use the SDK without reading code) and is packed as the NuGet readme, so it uses absolute links and plain Markdown only. No history/breaking-changes section for the 1.0.0 line.
 - **WebTestPlan design (2026-10-25)**: Blazor Server + plain CSS (no UI library), text/tables only (no Maps JavaScript API). Cache layer picked by `Cache:Mode` (`None`/`Memory`/`Distributed`); Distributed uses `Microsoft.Extensions.Caching.StackExchangeRedis` 10.0.7 (MIT, no known vulnerabilities, approved by the user). API key only from user secrets or `AarxMaps__ApiKey`. The UI doesn't pre-validate, so invalid input reaches the builders and their rules can be tested. Session token on Details is consumed by the first call.
 - **Docs site (2026-10-28)**: plan in `DOC-PLAN.md`. Claude writes the Docusaurus pages and the user reads them (exception to the reviewer role). The user handles all git work for Phase 4 (branch `Phase4-Docs`). No versioned docs.
+- **1.0.0 targets `net10.0` only (2026-10-31)**: .NET 8 and 9 reach end of support on 2026-11-10, and .NET 10 is the current LTS (until 2028-11-14). Apps on .NET 8/9 can't install AarxMaps until they upgrade. The retarget, dependency alignment (`Microsoft.Extensions.*` 10.0.x) and docs pass are `RELEASE-PLAN.md` R1. Until then the code still builds `net8.0;net9.0`.
 - **Tracking split**: `CLAUDE.md` for stable guidance, `PROGRESS.md` for status/decisions/lessons.
 
 ## Lessons learned
 
 **FluentAssertions 8+ is commercially licensed.** Stay on 7.x.
+
+**Test a newer runtime without retargeting (2026-10-30).** `DOTNET_ROLL_FORWARD=LatestMajor dotnet test AarxMaps.Tests -f net9.0` runs the `net9.0` build on the newest installed runtime, which is exactly what a consumer on that runtime gets. Check the testhost `--diag` log for the runtime version; the summary line still says `(net9.0)`.
 
 **Partial properties need C# 13** and break the `net8.0` target. Check language features against the lowest TFM.
 
