@@ -224,7 +224,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Compile the C# snippets of the docs site.")
     parser.add_argument("--out", type=Path, default=Path(tempfile.gettempdir()) / "aarxmaps-snippets",
                         help="Scratch directory for the generated projects (default: system temp).")
-    parser.add_argument("--framework", default="net9.0", help="Target framework (default: net9.0).")
+    parser.add_argument("--framework", default="net10.0", help="Target framework (default: net10.0).")
     args = parser.parse_args()
 
     out_dir: Path = args.out.resolve()

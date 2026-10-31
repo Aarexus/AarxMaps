@@ -9,8 +9,11 @@ Read order in a new session: `CLAUDE.md` -> `PROGRESS.md` -> this file. `DOC-PLA
 ## Current status
 
 - **Docs done.** `DOC-PLAN.md` Steps 0-9 are complete (2026-10-31): every page written and verified, and the user read the site with no findings.
-- **Target changed (2026-10-31):** 1.0.0 targets `net10.0` only (see Critical decisions). The code, docs and `CLAUDE.md` still say `net8.0;net9.0` until R1 is done.
-- **Next:** R1.
+- **Target changed (2026-10-31):** 1.0.0 targets `net10.0` only (see Critical decisions).
+- **R1 done (2026-10-31):** code, docs and tracking files are on `net10.0`. The R2 vulnerability check was run at the same time.
+- **R2 done (2026-10-31):** Claude made the edits at the user's request; the user reviewed them.
+- **R3 done (2026-10-31), waiting for the user's review:** Claude made the edits at the user's request.
+- **Next:** user reviews R3, then R4.
 - **Blocked:** nothing.
 
 ## Steps
@@ -30,10 +33,10 @@ Checked 2026-10-31:
 
 **User (code and git):**
 
-- [ ] Drop the `Csproj metadata` stash. Its content is already in the working tree.
-- [ ] Drop the `Dotnet 10 target` stash. It adds `net10.0` next to `net8.0;net9.0`, and its text changes (README, Installation, `CLAUDE.md`, `PROGRESS.md`) describe three targets, so it doesn't fit a `net10.0`-only release. Claude rewrites those texts below.
-- [ ] Retarget the three packable projects and `AarxMaps.Tests` to `<TargetFramework>net10.0</TargetFramework>` (singular, replacing `TargetFrameworks`).
-- [ ] Align the `Microsoft.Extensions.*` references in Core and Places on one patch, 10.0.14 (recheck the latest when you do it):
+- [x] Drop the `Csproj metadata` stash. Its content is already in the working tree.
+- [x] Drop the `Dotnet 10 target` stash. It adds `net10.0` next to `net8.0;net9.0`, and its text changes (README, Installation, `CLAUDE.md`, `PROGRESS.md`) describe three targets, so it doesn't fit a `net10.0`-only release. Claude rewrites those texts below.
+- [x] Retarget the three packable projects and `AarxMaps.Tests` to `<TargetFramework>net10.0</TargetFramework>` (singular, replacing `TargetFrameworks`).
+- [x] Align the `Microsoft.Extensions.*` references in Core and Places on one patch, 10.0.14 (recheck the latest when you do it):
 
   | Package | Used by | Now | Target |
   | --- | --- | --- | --- |
@@ -42,34 +45,46 @@ Checked 2026-10-31:
   | `Microsoft.Extensions.DependencyInjection` | Core, Places | 10.0.3 | 10.0.14 |
   | `Microsoft.Extensions.Http` | Core | 10.0.3 | 10.0.14 |
 
-- [ ] `dotnet build AarxMaps.sln` with 0 warnings, then `dotnet test AarxMaps.Tests`. `AnalysisLevel` is `latest`, so the .NET 10 SDK can bring analyzer rules the 8/9 builds didn't run. Fix them or suppress them with a reason, as `CLAUDE.md` says.
+- [x] `dotnet build AarxMaps.sln` with 0 warnings, then `dotnet test AarxMaps.Tests`. `AnalysisLevel` is `latest`, so the .NET 10 SDK can bring analyzer rules the 8/9 builds didn't run. Fix them or suppress them with a reason, as `CLAUDE.md` says. Result (2026-10-31): clean Debug and Release builds with 0 warnings, 1,284 tests pass; no new analyzer rules fired.
 
 **Claude (docs, after the build is green):**
 
-- [ ] Installation: requirements become ".NET 10 or later", and the "Supported .NET versions" table is replaced by one line. The Introduction drops ".NET 8 and later".
-- [ ] Coming from DelgadoMaps: say that AarxMaps needs .NET 10, so apps on .NET 8 or 9 upgrade first.
-- [ ] README: the two version lines.
-- [ ] `docs/scripts/compile-snippets.py`: default `--framework` `net10.0`. Rerun it (every snippet must compile), then `npm run build`.
-- [ ] `CLAUDE.md`: the TFM rules ("Builds with zero warnings on both `net8.0` and `net9.0`", the `-f net9.0` command, the C# 13 / lowest-TFM note) and the CI line. `PROGRESS.md`: the build state and the .NET 10 compatibility notes.
-- [ ] Grep docs, README and tracking files for `net8`, `net9`, `.NET 8` and `.NET 9`, and expect hits only in history (`DOC-PLAN.md`, dated `PROGRESS.md` entries).
+- [x] Installation: requirements become ".NET 10 or later", and the "Supported .NET versions" table is replaced by one line. The Introduction drops ".NET 8 and later".
+- [x] Coming from DelgadoMaps: say that AarxMaps needs .NET 10, so apps on .NET 8 or 9 upgrade first.
+- [x] README: the two version lines.
+- [x] `docs/scripts/compile-snippets.py`: default `--framework` `net10.0`. Rerun it (every snippet must compile), then `npm run build`.
+- [x] `CLAUDE.md`: the TFM rules ("Builds with zero warnings on both `net8.0` and `net9.0`", the `-f net9.0` command, the C# 13 / lowest-TFM note) and the CI line. `PROGRESS.md`: the build state and the .NET 10 compatibility notes.
+- [x] Grep docs, README and tracking files for `net8`, `net9`, `.NET 8` and `.NET 9`, and expect hits only in history (`DOC-PLAN.md`, dated `PROGRESS.md` entries).
 
-### R2. Package metadata (user edits, Claude reviews)
+### R2. Package metadata (Claude edited at the user's request, user reviews)
 
-- [ ] **One place for shared metadata.** Move what the three csproj repeat into a root `Directory.Build.props`: `TargetFramework`, `Version`, authors, license, repository, icon and readme items, analyzer settings. One `Version` removes the "keep the three in sync before tagging" risk.
-- [ ] **`PackageProjectUrl`** -> the docs site (`https://aarexus.github.io/AarxMaps/`). The repository stays in `RepositoryUrl`.
-- [ ] **Symbols:** `IncludeSymbols` + `SymbolPackageFormat` `snupkg`, `EmbedUntrackedSources`, and `ContinuousIntegrationBuild` set when building on CI (`'$(GITHUB_ACTIONS)' == 'true'`). This gives debuggable packages with deterministic paths. No new dependency.
-- [ ] **Release notes:** `PackageReleaseNotes`, a short line plus a link to the GitHub release.
-- [ ] **Vulnerability check:** `dotnet list package --vulnerable --include-transitive` on the three packable projects, and expect no hits.
+- [x] **One place for shared metadata.** Move what the three csproj repeat into a root `Directory.Build.props`: `TargetFramework`, `Version`, authors, license, repository, icon and readme items, analyzer settings. One `Version` removes the "keep the three in sync before tagging" risk.
+- [x] **`PackageProjectUrl`** -> the docs site (`https://aarexus.github.io/AarxMaps/`). The repository stays in `RepositoryUrl`.
+- [x] **Symbols:** `IncludeSymbols` + `SymbolPackageFormat` `snupkg`, `EmbedUntrackedSources`, and `ContinuousIntegrationBuild` set when building on CI (`'$(GITHUB_ACTIONS)' == 'true'`). This gives debuggable packages with deterministic paths. No new dependency.
+- [x] **Release notes:** `PackageReleaseNotes`, a short line plus a link to the GitHub release.
+- **Result (2026-10-31):**
+  - Clean Debug and Release builds with 0 warnings; 1,284 tests pass. Evaluated properties match the old csproj values for all four projects.
+  - Each package now also produces a `.snupkg` (PDB only).
+  - The nuspec differs from the R1 output only in `projectUrl` (docs site), the new `releaseNotes` and the commit hash.
+  - A simulated CI build (`GITHUB_ACTIONS=true`) gives a PDB with no local paths, SourceLink mapping `/_/*` to `raw.githubusercontent.com/Aarexus/AarxMaps/<commit>`, and the generated sources embedded.
+  - No package was added, so the vulnerability check stands.
+  - `EnableNETAnalyzers` was dropped: it is `true` by default on .NET 5+ (verified with `-getProperty`).
+- [x] **Vulnerability check:** `dotnet list package --vulnerable --include-transitive` on the three packable projects, and expect no hits. Done 2026-10-31 after the 10.0.14 bump: no hits in any project, Tests included. Rerun if R2 adds a package.
 
-### R3. Workflows (user edits, Claude reviews)
+### R3. Workflows (Claude edited at the user's request, user reviews)
 
-- [ ] `publish.yml`:
+- [x] `publish.yml`:
   - `setup-dotnet` installs only `10.0.x`.
   - Fail when the tag (`v1.0.0`) doesn't match the package version.
   - Set `permissions: contents: read`.
   - Push the `.snupkg` files too. `dotnet nuget push *.nupkg` picks them up when they sit next to the packages.
-- [ ] Optional: run the publish job in a GitHub environment (`nuget`) with the user as required reviewer, so a pushed tag waits for approval. Put the API key in that environment instead of a repo secret.
-- [ ] `docs.yml` needs no changes.
+- [x] Optional: run the publish job in a GitHub environment (`nuget`) with the user as required reviewer, so a pushed tag waits for approval. Put the API key in that environment instead of a repo secret. The workflow side is done (`environment: nuget`); the reviewer and the secret are set up in R8.
+- [x] ~~`docs.yml` needs no changes.~~ Wrong: it pinned Node 20 (end of life 2026-04-30) and actions three majors old. Bumped like `publish.yml`, and Node 24 (LTS until 2028-04-30).
+- **Result (2026-10-31):**
+  - Both workflows use the latest action majors: `checkout@v7`, `setup-dotnet@v6`, `setup-node@v7`, `configure-pages@v6`, `upload-pages-artifact@v5`, `deploy-pages@v5`. Their major releases were checked for breaking changes; none affect these workflows (mostly the Node 24 action runtime). `upload-pages-artifact` v4+ drops dotfiles, so `.nojekyll` is left out; Pages deployed through Actions doesn't run Jekyll, so it isn't needed.
+  - `publish.yml` also passes the API key through an `env` variable instead of inlining `${{ secrets.* }}` in the command.
+  - Verified locally: the tag check passes for `v1.0.0` and fails for `v1.0.1`; restore, build, test and pack with the workflow's flags give 0 warnings, 1,284 passing tests, and three `.nupkg` + three `.snupkg` in the output folder. Both files parse as YAML.
+  - Not verifiable locally: the docs build on Node 24 (local machine has Node 20). The first `docs.yml` run in R4 checks it.
 
 ### R4. Deploy the docs (user, then Claude)
 
@@ -106,7 +121,8 @@ Also try to install the packages into a `net8.0` app. The restore should fail wi
 
 - [ ] Recheck that the IDs are free.
 - [ ] Optional: request ID prefix reservation for `AarxMaps.*`. Packages then show a verified mark and nobody else can publish under the prefix.
-- [ ] Create an API key: push-only, glob `AarxMaps.*`, with an expiry. Store it as `NUGET_API_KEY` (repo secret, or the R3 environment).
+- [ ] Create an API key: push-only, glob `AarxMaps.*`, with an expiry. Store it as `NUGET_API_KEY` in the `nuget` environment (Settings -> Environments). A repo secret also works, since environment jobs see repo secrets.
+- [ ] Optional: add yourself as required reviewer on the `nuget` environment, so a pushed tag waits for approval before anything is published. GitHub creates the environment on the first run if it doesn't exist, but without protection rules.
 - [ ] Recheck `PROGRESS.md` Known flaws against the Known limitations page.
 
 ### R9. Release (user)
@@ -131,9 +147,18 @@ Also try to install the packages into a `net8.0` app. The restore should fail wi
   - **Cost:** apps on .NET 8 or 9 can't install AarxMaps (NU1202) until they upgrade, including existing DelgadoMaps users.
   - **Gain:** one TFM, one dependency line (`Microsoft.Extensions.*` 10.0.x), one test run, and no lowest-TFM language limits.
   - **Supersedes** the same-day decision to use per-TFM `Microsoft.Extensions` versions (8.0.x for `net8.0`, 9.0.x for `net9.0`), and the `Dotnet 10 target` stash, which added `net10.0` next to the old targets.
+- **`Directory.Build.props` scope (2026-10-31).** Shared settings (TFM, nullable, implicit usings) apply to every project. Packaging, XML docs and analyzer settings are conditioned on `'$(MSBuildProjectName)' != 'AarxMaps.Tests'`. `IsPackable` can't be the condition, because the props file is evaluated before the csproj sets it.
+- **Release notes and version are hardcoded per release (2026-10-31).** `PackageReleaseNotes` names v1.0.0 explicitly. Each release updates `Version` and `PackageReleaseNotes` together in `Directory.Build.props`.
+- **Publish job runs in a `nuget` environment (2026-10-31).** Lets the user add a required reviewer and scope the API key to that job. Harmless if left unconfigured.
 - **Smoke test from packages, not projects (2026-10-31).** Every earlier check used `ProjectReference`. R7 installs the packed `.nupkg` files from a local folder into fresh apps, because only that catches packaging mistakes.
 
 ## Lessons learned
+
+- **Check action versions and runtime support when touching workflows (2026-10-31).** The plan said `docs.yml` needed no changes, but it ran on Node 20 (end of life) with actions three majors behind. The GitHub releases API (`/repos/<owner>/<action>/releases/latest`) and Node's `schedule.json` answer both in seconds.
+
+- **An empty `Directory.Build.props` breaks every build (2026-10-31).** MSBuild imports it automatically and fails with MSB4024 "Root element is missing". Even a placeholder needs `<Project></Project>`.
+
+- **Verify a retarget with a clean build (2026-10-31).** After the TFM change, `bin/` still held the previous day's `net8.0`/`net9.0` outputs, which could pass for a new build. Delete `bin/`/`obj/`, rebuild, then check timestamps and package contents.
 
 - **Check a stash before treating it as pending work (2026-10-31).** `Csproj metadata` looked like unapplied changes, but it was identical to the working tree. Compare it with `git diff stash@{0}` and `git show stash@{0}:<path> | cmp - <path>`.
 - **Check support dates before picking target frameworks (2026-10-31).** The plan nearly fixed per-TFM dependency versions for two runtimes that were ten days from end of support. `releases-index.json` (dotnetcli blob storage) gives every channel's `eol-date` in one request.

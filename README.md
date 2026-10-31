@@ -8,7 +8,7 @@ Strongly typed .NET SDK for the Google Maps Platform: **Places API (New)** and *
 | `AarxMaps.Places` | Autocomplete, Text Search, Nearby Search, Place Details, Photos, Reviews           |
 | `AarxMaps.Routes` | Directions (`computeRoutes`) and Distance Matrix (`computeRouteMatrix`)            |
 
-Runs on **.NET 8** and later (built for .NET 8 and .NET 9; .NET 10+ apps use the .NET 9 build). MIT licensed.
+Runs on **.NET 10** and later. MIT licensed.
 
 ---
 
@@ -33,7 +33,7 @@ Runs on **.NET 8** and later (built for .NET 8 and .NET 9; .NET 10+ apps use the
 
 ## Requirements
 
-- .NET 8 or later. Apps on .NET 10 or newer use the .NET 9 build; the full test suite passes on .NET 10.
+- .NET 10 or later. Apps on .NET 8 or 9 can't install the packages until they upgrade.
 - A Google Cloud API key with the APIs you use enabled: **Places API (New)** for `AarxMaps.Places`, **Routes API** for `AarxMaps.Routes`. The legacy Places API is not used.
 - Billing enabled on the Google Cloud project. Every call in this SDK is a billed Google request.
 

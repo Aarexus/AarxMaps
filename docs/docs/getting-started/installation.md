@@ -9,7 +9,7 @@ AarxMaps ships as three NuGet packages. Install the feature package you need; ea
 
 ## Requirements
 
-- .NET 8 or later. See [Supported .NET versions](#supported-net-versions).
+- .NET 10 or later. The packages are built for .NET 10 only, so apps on .NET 8 or 9 can't install them until they upgrade.
 - A Google Cloud project with billing enabled, and an API key from it. Every call the SDK makes is a billed Google request.
 - The Google API behind each package enabled on that project:
 
@@ -34,18 +34,6 @@ dotnet add package AarxMaps.Routes
 | `AarxMaps.Routes` | `AarxMaps.Core` |
 
 Install `AarxMaps.Core` on its own only when you want to call Google endpoints directly through `IMapsApiClient`, without a feature module. See [Custom endpoints](../core/custom-endpoints.md).
-
-## Supported .NET versions
-
-The packages are built for .NET 8 and .NET 9. Newer apps use the .NET 9 build, which .NET runs unchanged on later versions.
-
-| Your app targets | Build it uses |
-| --- | --- |
-| .NET 8 | .NET 8 |
-| .NET 9 | .NET 9 |
-| .NET 10 or later | .NET 9 |
-
-The full test suite passes on .NET 10.
 
 ## API key
 

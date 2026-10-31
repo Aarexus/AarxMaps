@@ -5,7 +5,7 @@ title: Introduction
 
 # Introduction
 
-AarxMaps is a strongly typed .NET SDK for Google Maps Platform. You build requests with fluent builders, register the services through dependency injection, and get typed results and typed exceptions back. It runs on .NET 8 and later.
+AarxMaps is a strongly typed .NET SDK for Google Maps Platform. You build requests with fluent builders, register the services through dependency injection, and get typed results and typed exceptions back. It runs on .NET 10 and later.
 
 ## Packages
 

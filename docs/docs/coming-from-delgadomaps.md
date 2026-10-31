@@ -9,6 +9,8 @@ AarxMaps is the new name of D3lg4doMaps, whose packages were `D3lg4doMaps.*` and
 
 On 1.x or 2.x? `AddD3lg4doMaps*` is now `AddAarxMaps*`, `D3lg4doMaps.*.Public.*` namespaces follow the namespace tables below, and `RequestTimeout` is a `TimeSpan`.
 
+AarxMaps needs .NET 10 or later. D3lg4doMaps was built for .NET 8 and 9, so an app still on one of those upgrades to .NET 10 first; otherwise restoring the AarxMaps packages fails with NU1202 (package not compatible).
+
 ## Example
 
 The same task in both versions: find two places by text, then get the default route between them.

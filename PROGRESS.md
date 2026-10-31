@@ -1,6 +1,6 @@
 # AarxMaps - Progress
 
-Last updated: 2026-10-30
+Last updated: 2026-10-31
 
 ## Current status
 
@@ -9,11 +9,14 @@ Last updated: 2026-10-30
 | 1     | Core module    | Done, merged (#1). 611 tests passing on net8.0 and net9.0 (Phase 2 additions: `Cacheable`, `IsAarxMapsRegistered`).                 |
 | 2     | Places module  | Done, merged (#2). Core and Places build with 0 warnings on net8.0 + net9.0; 1,032 tests passing (407 Places). |
 | 3     | Routes module  | Done, merged (#3). Solution builds with 0 warnings on net8.0 + net9.0; 1,284 tests passing (252 Routes). |
-| 4     | Docs + release | In progress on `Phase4-Docs`; docs tracked in `DOC-PLAN.md`, release in `RELEASE-PLAN.md`. Steps 0-8 done (2026-10-30): docs machine set up, DelgadoMaps name map, `docs/` restructured on Docusaurus 3.10.2, Aarexus branding plus NuGet icon, every docs page written (Introduction, Getting started, Core, Places, Routes, Known limitations, DelgadoMaps map) and the landing page (Ink hero), all verified. Step 9 done (2026-10-31): the user read the whole site, no findings. Next: `RELEASE-PLAN.md` (R1-R10: housekeeping, package metadata, workflows, docs deploy, README trim, pack + smoke test, nuget.org setup, tag `v1.0.0`, post-release). |
+| 4     | Docs + release | In progress on `Phase4-Docs`; docs tracked in `DOC-PLAN.md`, release in `RELEASE-PLAN.md`. Steps 0-8 done (2026-10-30): docs machine set up, DelgadoMaps name map, `docs/` restructured on Docusaurus 3.10.2, Aarexus branding plus NuGet icon, every docs page written (Introduction, Getting started, Core, Places, Routes, Known limitations, DelgadoMaps map) and the landing page (Ink hero), all verified. Step 9 done (2026-10-31): the user read the whole site, no findings. Release in progress on `Release-steps` (`RELEASE-PLAN.md` R1-R10): R1 done (2026-10-31, retarget to `net10.0` + docs). R2 done (2026-10-31, `Directory.Build.props`, docs-site project URL, symbols, release notes), reviewed. R3 done (2026-10-31, workflows: .NET 10 only, tag/version check, `contents: read`, `nuget` environment, symbols, actions and Node bumped), waiting for the user's review. Next: R4 (deploy the docs). |
 
-### Build state (2026-10-24)
+### Build state (2026-10-31)
 
-- **Solution build** (`dotnet build AarxMaps.sln`, what CI runs on tags): 0 warnings, 0 errors on both TFMs.
+- **Target framework:** `net10.0` only on Core, Places, Routes and Tests (retargeted in R1; before that `net8.0;net9.0`, briefly plus `net10.0`).
+- **Dependencies:** `Microsoft.Extensions.*` 10.0.14 in Core and Places; no vulnerable packages, transitive included.
+- **Solution build** (`dotnet build AarxMaps.sln`, what CI runs on tags): 0 warnings, 0 errors (clean build after deleting `bin/`/`obj/`, Debug and Release). 1,284 tests pass. Each `.nupkg` ships `lib/net10.0` (DLL + XML docs), `README.md` and `icon.png`, with one `net10.0` dependency group.
+- **Docs:** all 39 C# snippets compile on `net10.0` (`compile-snippets.py`, console + web); `npm run build` succeeds.
 - **Core**, **Places**: unchanged since 2026-10-22.
 - **Routes**: rewritten in Phase 3 (Directions + DistanceMatrix). The user's pre-rewrite sources were untracked in git; a copy was kept in the session scratchpad only, so it is gone once the session ends.
 
@@ -124,16 +127,19 @@ Last updated: 2026-10-30
 - **README scope (2026-10-25)**: the README is the full usage guide (enough to use the SDK without reading code) and is packed as the NuGet readme, so it uses absolute links and plain Markdown only. No history/breaking-changes section for the 1.0.0 line.
 - **WebTestPlan design (2026-10-25)**: Blazor Server + plain CSS (no UI library), text/tables only (no Maps JavaScript API). Cache layer picked by `Cache:Mode` (`None`/`Memory`/`Distributed`); Distributed uses `Microsoft.Extensions.Caching.StackExchangeRedis` 10.0.7 (MIT, no known vulnerabilities, approved by the user). API key only from user secrets or `AarxMaps__ApiKey`. The UI doesn't pre-validate, so invalid input reaches the builders and their rules can be tested. Session token on Details is consumed by the first call.
 - **Docs site (2026-10-28)**: plan in `DOC-PLAN.md`. Claude writes the Docusaurus pages and the user reads them (exception to the reviewer role). The user handles all git work for Phase 4 (branch `Phase4-Docs`). No versioned docs.
-- **1.0.0 targets `net10.0` only (2026-10-31)**: .NET 8 and 9 reach end of support on 2026-11-10, and .NET 10 is the current LTS (until 2028-11-14). Apps on .NET 8/9 can't install AarxMaps until they upgrade. The retarget, dependency alignment (`Microsoft.Extensions.*` 10.0.x) and docs pass are `RELEASE-PLAN.md` R1. Until then the code still builds `net8.0;net9.0`.
+- **1.0.0 targets `net10.0` only (2026-10-31)**: .NET 8 and 9 reach end of support on 2026-11-10, and .NET 10 is the current LTS (until 2028-11-14). Apps on .NET 8/9 can't install AarxMaps until they upgrade. Done in `RELEASE-PLAN.md` R1 (2026-10-31): retarget, `Microsoft.Extensions.*` 10.0.14, docs pass.
+- **Shared build settings in `Directory.Build.props` (2026-10-31)**: TFM, version, package metadata, analyzers and symbols (`.snupkg` + SourceLink) live once at the root; packaging and analyzer settings skip `AarxMaps.Tests` by project name. Details in `RELEASE-PLAN.md` R2.
 - **Tracking split**: `CLAUDE.md` for stable guidance, `PROGRESS.md` for status/decisions/lessons.
 
 ## Lessons learned
 
 **FluentAssertions 8+ is commercially licensed.** Stay on 7.x.
 
+**Verify a retarget with a clean build (2026-10-31).** After the TFM change, `bin/` still held yesterday's `net8.0`/`net9.0` outputs and packages, so looking at existing outputs proves nothing. Delete `bin/`/`obj/`, rebuild, and check timestamps and package contents.
+
 **Test a newer runtime without retargeting (2026-10-30).** `DOTNET_ROLL_FORWARD=LatestMajor dotnet test AarxMaps.Tests -f net9.0` runs the `net9.0` build on the newest installed runtime, which is exactly what a consumer on that runtime gets. Check the testhost `--diag` log for the runtime version; the summary line still says `(net9.0)`.
 
-**Partial properties need C# 13** and break the `net8.0` target. Check language features against the lowest TFM.
+**Partial properties need C# 13** and break the `net8.0` target. Check language features against the lowest TFM. (Moot since 1.0.0 targets `net10.0` only; applies again if a lower target ever comes back.)
 
 **`HttpClient.Timeout` only covers up to response headers** on the streaming path; body reads need their own token.
 
