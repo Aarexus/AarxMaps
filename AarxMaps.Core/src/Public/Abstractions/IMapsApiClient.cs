@@ -66,7 +66,8 @@ public interface IMapsApiClient {
     /// <remarks>
     /// Intended for endpoints that return large or incrementally produced payloads, such as the
     /// Routes <c>computeRouteMatrix</c> top-level JSON array. Most callers should use the
-    /// <c>StreamAsync&lt;T&gt;</c> extension instead, which manages the lifetime for them.
+    /// <see cref="Extensions.MapsApiClientExtensions.SendAndEnumerateAsync{T}"/> extension instead,
+    /// which manages the lifetime for them.
     /// <para>
     /// <b>Ownership:</b> on success, the caller owns the returned <see cref="StreamResponse"/> and
     /// must dispose it (<c>await using</c>), even if it never reads the stream. On failure, the

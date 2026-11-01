@@ -1,0 +1,113 @@
+/**
+ * Aarexus brand on top of Infima. Palette and fonts come from the Aarexus brand kit:
+ * Ink #0B0B0D, Graphite #1C1C20, Mist #9A9A9F, Bone #F2F0ED, Crimson #C1121F, Vermilion #E8452C.
+ * Crimson is never used as text on dark backgrounds (3.2:1); dark mode uses Vermilion instead.
+ */
+
+/* Self-hosted fonts (SIL OFL 1.1, licenses in static/fonts). Latin subset, variable weight. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/inter-latin-400-700.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Sora';
+  font-style: normal;
+  font-weight: 600 700;
+  font-display: swap;
+  src: url('/fonts/sora-latin-600-700.woff2') format('woff2');
+}
+
+:root {
+  /* Crimson: 6.2:1 on white. Shades from the Docusaurus color generator. */
+  --ifm-color-primary: #c1121f;
+  --ifm-color-primary-dark: #ae101c;
+  --ifm-color-primary-darker: #a40f1a;
+  --ifm-color-primary-darkest: #870d16;
+  --ifm-color-primary-light: #d41422;
+  --ifm-color-primary-lighter: #de1524;
+  --ifm-color-primary-lightest: #eb2736;
+
+  --ifm-font-family-base: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --ifm-heading-font-family: 'Sora', var(--ifm-font-family-base);
+  --ifm-heading-font-weight: 600;
+  --ifm-color-content: #0b0b0d;
+
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  /* Vermilion: 5.0:1 on Ink. Every surface that carries primary-colored text stays Ink,
+     because Vermilion on Graphite is only 4.3:1. */
+  --ifm-color-primary: #e8452c;
+  --ifm-color-primary-dark: #e03318;
+  --ifm-color-primary-darker: #d43017;
+  --ifm-color-primary-darkest: #ae2813;
+  --ifm-color-primary-light: #eb5b45;
+  --ifm-color-primary-lighter: #ec6651;
+  --ifm-color-primary-lightest: #f08777;
+
+  --ifm-background-color: #0b0b0d;
+  --ifm-background-surface-color: #0b0b0d;
+  --ifm-color-content: #f2f0ed;
+  --ifm-color-content-secondary: #9a9a9f;
+  --ifm-table-stripe-background: #1c1c20;
+
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+.markdown h1,
+.hero__title {
+  font-weight: 700;
+}
+
+/* Collapsible sections. The Details theme component hard-codes Infima's `alert alert--info`,
+   so they render as blue info callouts. Restyle them as a quiet panel that matches the tables.
+   `details.alert` only matches <details>; admonitions are divs and keep their styles. */
+.markdown details.alert {
+  --ifm-alert-background-color: #ffffff;
+  --ifm-alert-background-color-highlight: rgb(246, 247, 248); /* Infima's code background */
+  --ifm-alert-foreground-color: var(--ifm-color-content);
+  --ifm-alert-border-color: var(--ifm-table-border-color);
+  --ifm-alert-border-width: 1px;
+  --ifm-alert-border-left-width: 1px;
+  --ifm-alert-shadow: none;
+  /* .alert turns links into foreground-colored text; keep them primary like the rest of the page. */
+  --ifm-link-color: var(--ifm-color-primary);
+  --ifm-link-hover-color: var(--ifm-color-primary-dark);
+  --ifm-link-decoration: none;
+  /* Arrow and divider color; the arrow is set to primary below. */
+  --docusaurus-details-decoration-color: var(--ifm-table-border-color);
+}
+
+.markdown details.alert > summary {
+  font-weight: 600;
+}
+
+.markdown details.alert > summary::before {
+  border-left-color: var(--ifm-color-primary);
+}
+
+/* Ink, not Graphite: Vermilion links inside keep 5.0:1. */
+[data-theme='dark'] .markdown details.alert {
+  --ifm-alert-background-color: #0b0b0d;
+  --ifm-alert-background-color-highlight: rgba(255, 255, 255, 0.1);
+  --ifm-link-hover-color: var(--ifm-color-primary-light);
+}
+
+/* Footer on Ink in both themes. */
+.footer--dark {
+  --ifm-footer-background-color: #0b0b0d;
+  --ifm-footer-title-color: #f2f0ed;
+  --ifm-footer-link-color: #9a9a9f;
+  --ifm-footer-link-hover-color: #f2f0ed;
+  --ifm-footer-color: #9a9a9f;
+}
+
+[data-theme='dark'] .footer--dark {
+  border-top: 1px solid #1c1c20;
+}

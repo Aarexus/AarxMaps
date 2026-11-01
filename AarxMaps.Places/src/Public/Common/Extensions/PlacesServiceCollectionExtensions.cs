@@ -33,6 +33,9 @@ public static class PlacesServiceCollectionExtensions {
     /// <returns>
     /// The same <see cref="IServiceCollection"/> instance for chaining.
     /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="services"/> is <c>null</c>.
+    /// </exception>
     /// <exception cref="MapsApiException">
     /// Thrown when the Core services have not been registered.
     /// </exception>

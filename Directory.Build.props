@@ -1,0 +1,43 @@
+<Project>
+
+  <!-- Every project in the solution -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- CI builds (GitHub Actions): normalized source paths for SourceLink and deterministic packages -->
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <!-- Packable SDK projects (Core, Places, Routes). Each csproj keeps its own PackageId, Description and PackageTags -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' != 'AarxMaps.Tests'">
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>AllEnabledByDefault</AnalysisMode>
+
+    <Version>1.0.0</Version>
+    <Authors>Aarexus Software</Authors>
+    <Company>Aarexus Software</Company>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://aarexus.github.io/AarxMaps/</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Aarexus/AarxMaps</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReleaseNotes>First release of AarxMaps, formerly D3lg4doMaps. Requires .NET 10. Release notes: https://github.com/Aarexus/AarxMaps/releases/tag/v1.0.0</PackageReleaseNotes>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'AarxMaps.Tests'">
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)icon.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

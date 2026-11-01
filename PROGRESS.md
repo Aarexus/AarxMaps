@@ -1,19 +1,22 @@
 # AarxMaps - Progress
 
-Last updated: 2026-10-24
+Last updated: 2026-10-31
 
 ## Current status
 
 | Phase | Scope          | Status                                                                                                                                  |
 | ----- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | 1     | Core module    | Done, merged (#1). 611 tests passing on net8.0 and net9.0 (Phase 2 additions: `Cacheable`, `IsAarxMapsRegistered`).                 |
-| 2     | Places module  | Done on `Phase2-Places`, ready for PR #2. Core and Places build with 0 warnings on net8.0 + net9.0; 1,032 tests passing (407 Places). |
-| 3     | Routes module  | Implemented on `Phase3-RoutesModule` (2026-10-24), awaiting the user's read-through. Solution builds with 0 warnings on net8.0 + net9.0; 1,284 tests passing (252 Routes). |
-| 4     | Docs + release | Not started. Docusaurus `docs/`, README rewrite, 1.0.0 publish.                                                                       |
+| 2     | Places module  | Done, merged (#2). Core and Places build with 0 warnings on net8.0 + net9.0; 1,032 tests passing (407 Places). |
+| 3     | Routes module  | Done, merged (#3). Solution builds with 0 warnings on net8.0 + net9.0; 1,284 tests passing (252 Routes). |
+| 4     | Docs + release | In progress on `Phase4-Docs`; docs tracked in `DOC-PLAN.md`, release in `RELEASE-PLAN.md`. Steps 0-8 done (2026-10-30): docs machine set up, DelgadoMaps name map, `docs/` restructured on Docusaurus 3.10.2, Aarexus branding plus NuGet icon, every docs page written (Introduction, Getting started, Core, Places, Routes, Known limitations, DelgadoMaps map) and the landing page (Ink hero), all verified. Step 9 done (2026-10-31): the user read the whole site, no findings. Release in progress on `Release-steps` (`RELEASE-PLAN.md` R1-R10): R1 done (2026-10-31, retarget to `net10.0` + docs). R2 done (2026-10-31, `Directory.Build.props`, docs-site project URL, symbols, release notes), reviewed. R3 done (2026-10-31, workflows: .NET 10 only, tag/version check, `contents: read`, `nuget` environment, symbols, actions and Node bumped), waiting for the user's review. Next: R4 (deploy the docs). |
 
-### Build state (2026-10-24)
+### Build state (2026-10-31)
 
-- **Solution build** (`dotnet build AarxMaps.sln`, what CI runs on tags): 0 warnings, 0 errors on both TFMs.
+- **Target framework:** `net10.0` only on Core, Places, Routes and Tests (retargeted in R1; before that `net8.0;net9.0`, briefly plus `net10.0`).
+- **Dependencies:** `Microsoft.Extensions.*` 10.0.14 in Core and Places; no vulnerable packages, transitive included.
+- **Solution build** (`dotnet build AarxMaps.sln`, what CI runs on tags): 0 warnings, 0 errors (clean build after deleting `bin/`/`obj/`, Debug and Release). 1,284 tests pass. Each `.nupkg` ships `lib/net10.0` (DLL + XML docs), `README.md` and `icon.png`, with one `net10.0` dependency group.
+- **Docs:** all 39 C# snippets compile on `net10.0` (`compile-snippets.py`, console + web); `npm run build` succeeds.
 - **Core**, **Places**: unchanged since 2026-10-22.
 - **Routes**: rewritten in Phase 3 (Directions + DistanceMatrix). The user's pre-rewrite sources were untracked in git; a copy was kept in the session scratchpad only, so it is gone once the session ends.
 
@@ -45,19 +48,32 @@ Last updated: 2026-10-24
 
 **Done (2026-10-24):** public API review, model spec, then the full module implemented by Claude at the user's request (see Critical decisions): Directions and DistanceMatrix end to end (public models, builders, shared validator, DTOs, mappers, field masks, services, DI) plus 252 tests. Seven targeted mutations (ordering, false flags in the body, timestamp format, arrival-time rule, empty status, shared lists, place ID/address counting) were all caught.
 
-1. **Next:** user reads the Routes code and tests; fix anything found.
+1. **Next:** user reads the Routes code and tests; fix anything found. The `null`-handling nit found while writing the docs (2026-10-30) is accepted for v1 and tracked under Known flaws.
 2. Open PR #3 (`Phase3: Routes Module`) once PR #2 is merged.
 3. **Optional (post-v1):** `extraComputations` (`TRAFFIC_ON_POLYLINE` -> speed intervals, `TOLLS` -> toll info), `AvoidTunnels`, `geocodingResults` for address waypoints, transit headway/agency phone, a streaming `IAsyncEnumerable` matrix method, encoded-polyline decoding helper.
 
 ### Phase 4 - Docs + release
 
-- Docusaurus site under `docs/` (workflow already exists).
-- Rewrite README with current names (`AddAarxMaps*`, `AarxMaps.*` namespaces); drop the DelgadoMaps breaking-changes section or move it to a "history" page.
+- Docusaurus site under `docs/` (workflow already exists). **Plan in `DOC-PLAN.md` (2026-10-25):** structure, style, branding, hosting and work steps are decided; open questions there block Step 1. The site will become the source of truth, and the README gets trimmed afterwards (supersedes "README scope" below once done).
+- [X] **README rewrite (2026-10-25):** written by Claude from the public API only (all `src/Public` types of the three packages). Covers install, quick start, configuration, registration rules, caching, every Places/Routes builder and result model, detail levels, travel-mode rules, errors, cancellation, `IMapsApiClient` for custom endpoints, usage notes, known limitations and a namespace table. Every code snippet was compiled against the projects in a scratch app (0 warnings). DelgadoMaps breaking-changes and credits sections dropped.
+- **Next:** user reads the README. Findings from the README pass (status 2026-10-28):
+    1. Accepted as a v1 limitation: public response models (`PlaceDetails`, `RouteResult`, `RouteMatrixElement`, ...) have `internal` setters, so consumers can't build populated results when mocking `IPlacesService`/`IRoutesService`. Post-v1 options: public `PlacesModelFactory` / `RoutesModelFactory` (Azure SDK pattern) or `init` setters.
+    2. [X] Fixed: `IMapsApiClient.SendStreamAsync` remarks now point to `SendAndEnumerateAsync` (cref).
+    3. [X] Fixed: `LatLng` remarks now say consumers create instances through the validating constructor.
+    4. Minor: `docs/docusaurus.config.ts` still uses `JSebas-11.github.io` / `D3lg4doMaps`. Covered by `DOC-PLAN.md` Step 3.
+    5. Accepted as a v1 limitation: `MapsCachingOptionsValidator` uses `o.SlidingExpiration is { } s` on a non-nullable `TimeSpan` (always matches); sliding expiration can't be turned off.
+    6. [X] Fixed (2026-10-28): `AddAarxMapsPlaces` XML docs now document `ArgumentNullException` (thrown by `IsAarxMapsRegistered`), like `AddAarxMapsRoutes`.
 - Verify packed `.nupkg` contents (README, XML docs) before tagging `v1.0.0`.
+- [X] **WebTestPlan (2026-10-25):** manual test bench written by Claude at the user's request, at `WebTests/WebTestPlan/` (gitignored, not in `AarxMaps.sln`). Blazor Server (interactive), plain CSS, `ProjectReference` to the three SDK projects, one page per area (Autocomplete, Search, Details, Directions, Distance Matrix, `IMapsApiClient`). Builds with 0 warnings; every page renders (prerender) in all three cache modes with a dummy key. Interactive flows and real Google calls not run yet. See `WebTests/WebTestPlan/README.md` to run it.
+- **Next:** user runs WebTestPlan with a real key against each page and cache mode; record any SDK bugs found here.
 
 ## Known flaws (accepted for v1)
 
 - **`languageCode` / `regionCode` are never sent to Places (found 2026-10-22).** Core only sends `Accept-Language: {Language}-{Region}` (`RequestFactory`). Google's Places (New) reference documents `languageCode` (default `en-US`) and `regionCode` as body fields (Autocomplete, Text, Nearby) and query parameters (Details), and says nothing about `Accept-Language`. So `MapsConfiguration.Region` has no documented effect on Places, and `Language` depends on undocumented header handling. Preferred fix after v1: Places services take `IOptions<MapsConfiguration>` and the factories fill both from config. Routes has the same flaw by decision (2026-10-24): its reference also documents `languageCode`/`regionCode` as body fields, and they are not sent.
+
+- **Response models have `internal` setters (accepted 2026-10-28).** Consumers can't build populated `PlaceDetails`, `RouteResult`, `RouteMatrixElement`, ... when mocking the services in their own tests. Post-v1: model factories or `init` setters.
+- **Inconsistent `null` handling in the Routes builders (accepted 2026-10-30, fix post-v1).** `RouteRequestBuilder.From(null)` / `To(null)` are accepted, and `Build()` then fails with "Origin is required. Call From() before Build()", which is misleading after a `From` call. `WithRouteModifiers(null)` and `WithTransitPreferences(null)` (both builders) silently clear the value. `AddIntermediate`, `AddOrigin` and `AddDestination` throw `MapsInvalidRequestException` on `null`. Fix: throw `MapsInvalidRequestException` on `null` in `From`/`To` (and decide whether the `With*` setters should too). A behavior change, so it goes in a planned release.
+- **Sliding cache expiration can't be turned off (accepted 2026-10-28).** `MapsCachingOptions.SlidingExpiration` is a non-nullable `TimeSpan` and is always applied.
 
 ## Critical decisions
 
@@ -108,13 +124,22 @@ Last updated: 2026-10-24
 - **Routes wire format (2026-10-24)**: request bodies are internal DTOs (`ComputeRoutesPayload`, `ComputeRouteMatrixPayload`), never the public models. Enums go through `WireEnum<T>` (SCREAMING_SNAKE_CASE of the member name; unknown values read as `Unknown`; undefined values throw `MapsInvalidRequestException`), so public enum member names are part of the wire contract and `WireEnumTests` pins every value. Timestamps are sent as UTC `yyyy-MM-ddTHH:mm:ssZ`. `false` flags and empty lists are left out of the body.
 - **Routes field masks (2026-10-24)**: Directions Summary = route totals + labels/description/warnings/advisory/localized values + `optimizedIntermediateWaypointIndex` (in every level, since Google rejects optimization without it) + `fallbackInfo`; Standard adds polyline, viewport and per-leg totals; Full adds the route token and whole legs. Matrix Summary = indices, status, condition, distance, duration, fallback; Standard adds static duration and localized values; Full adds the travel advisory.
 - **Matrix results (2026-10-24)**: `GetDistancesAsync` buffers the stream and returns elements sorted by origin then destination. `Status` is `null` for successful elements (Google sends `"status": {}`). Never cached (streaming path).
+- **README scope (2026-10-25)**: the README is the full usage guide (enough to use the SDK without reading code) and is packed as the NuGet readme, so it uses absolute links and plain Markdown only. No history/breaking-changes section for the 1.0.0 line.
+- **WebTestPlan design (2026-10-25)**: Blazor Server + plain CSS (no UI library), text/tables only (no Maps JavaScript API). Cache layer picked by `Cache:Mode` (`None`/`Memory`/`Distributed`); Distributed uses `Microsoft.Extensions.Caching.StackExchangeRedis` 10.0.7 (MIT, no known vulnerabilities, approved by the user). API key only from user secrets or `AarxMaps__ApiKey`. The UI doesn't pre-validate, so invalid input reaches the builders and their rules can be tested. Session token on Details is consumed by the first call.
+- **Docs site (2026-10-28)**: plan in `DOC-PLAN.md`. Claude writes the Docusaurus pages and the user reads them (exception to the reviewer role). The user handles all git work for Phase 4 (branch `Phase4-Docs`). No versioned docs.
+- **1.0.0 targets `net10.0` only (2026-10-31)**: .NET 8 and 9 reach end of support on 2026-11-10, and .NET 10 is the current LTS (until 2028-11-14). Apps on .NET 8/9 can't install AarxMaps until they upgrade. Done in `RELEASE-PLAN.md` R1 (2026-10-31): retarget, `Microsoft.Extensions.*` 10.0.14, docs pass.
+- **Shared build settings in `Directory.Build.props` (2026-10-31)**: TFM, version, package metadata, analyzers and symbols (`.snupkg` + SourceLink) live once at the root; packaging and analyzer settings skip `AarxMaps.Tests` by project name. Details in `RELEASE-PLAN.md` R2.
 - **Tracking split**: `CLAUDE.md` for stable guidance, `PROGRESS.md` for status/decisions/lessons.
 
 ## Lessons learned
 
 **FluentAssertions 8+ is commercially licensed.** Stay on 7.x.
 
-**Partial properties need C# 13** and break the `net8.0` target. Check language features against the lowest TFM.
+**Verify a retarget with a clean build (2026-10-31).** After the TFM change, `bin/` still held yesterday's `net8.0`/`net9.0` outputs and packages, so looking at existing outputs proves nothing. Delete `bin/`/`obj/`, rebuild, and check timestamps and package contents.
+
+**Test a newer runtime without retargeting (2026-10-30).** `DOTNET_ROLL_FORWARD=LatestMajor dotnet test AarxMaps.Tests -f net9.0` runs the `net9.0` build on the newest installed runtime, which is exactly what a consumer on that runtime gets. Check the testhost `--diag` log for the runtime version; the summary line still says `(net9.0)`.
+
+**Partial properties need C# 13** and break the `net8.0` target. Check language features against the lowest TFM. (Moot since 1.0.0 targets `net10.0` only; applies again if a lower target ever comes back.)
 
 **`HttpClient.Timeout` only covers up to response headers** on the streaming path; body reads need their own token.
 
@@ -141,5 +166,11 @@ Last updated: 2026-10-24
 **DateTimeOffset's default JSON format writes 7 fractional digits**, and Google only accepts 0, 3, 6 or 9. Format timestamps explicitly before sending them.
 
 **Google's request fields carry cross-field rules that the reference lists per field** (e.g. `routingPreference` only for DRIVE/TWO_WHEELER, `arrivalTime` only for TRANSIT and otherwise silently ignored, `via` only on intermediates). Read each field's full description, not just its type.
+
+**Compile README snippets before publishing them.** A scratch project referencing the packages catches renamed members and wrong overloads that a read-through misses.
+
+**Razor quirks (2026-10-25):** `@code` blocks can't parse multi-line raw string literals (RZ1000; use verbatim `@"..."`), pattern variables in markup (`@if (x is { } p)`) share one scope across the whole render method, and a page named like an `@inject` property (`Client.razor` + `Client`) fails with CS0542.
+
+**Browsers block some ports (2026-10-25).** Chrome refuses 5060/5061 (SIP) with `ERR_UNSAFE_PORT`; curl doesn't, so a curl smoke test won't catch it. WebTestPlan uses 5080.
 
 **Moving files without updating namespaces** cascades into dozens of errors; rebuild after every structural move.

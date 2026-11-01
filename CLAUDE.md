@@ -8,7 +8,7 @@ Strongly typed .NET SDK for Google Maps Platform, shipped as three NuGet package
 
 The user writes the code; Claude reviews it. The unit of work is a whole workflow or module (for example, all of Places Autocomplete: builders, request models, services, DTOs, mappers, DI, tests).
 
-- **Do not write or edit code unless the user explicitly asks.** That covers source, tests and snippets. Reviews describe the problem and the fix in words, pointing to `file:line`. Doc files (`CLAUDE.md`, `PROGRESS.md`) are the exception and stay up to date.
+- **Do not write or edit code unless the user explicitly asks.** That covers source, tests and snippets. Reviews describe the problem and the fix in words, pointing to `file:line`. Doc files (`CLAUDE.md`, `PROGRESS.md`, `DOC-PLAN.md`, `RELEASE-PLAN.md`) are the exception and stay up to date. The 1.0.0 release is tracked step by step in `RELEASE-PLAN.md`. The Docusaurus site under `docs/` is also written by Claude and read by the user (plan in `DOC-PLAN.md`).
 - **Read the whole workflow before judging it.** Follow the call path end to end: builder -> request model -> service -> `IMapsApiClient` -> DTO -> mapper -> public model, plus DI registration and tests.
 - **Check against:**
   - Correctness: logic bugs, edge cases, null handling, coordinate order, field masks, payload shape compared with Google's API docs.
@@ -18,7 +18,7 @@ The user writes the code; Claude reviews it. The unit of work is a whole workflo
   - Simplicity: no overengineering, dead code or duplication. Readable names, and SOLID where it pays off.
   - Public API ergonomics and consistency across Places, Routes and Core.
   - Test coverage: missing cases and weak assertions. Tests must follow the conventions in this file.
-  - Builds with zero warnings on both `net8.0` and `net9.0`. Run `dotnet build` / `dotnet test` to verify.
+  - Builds with zero warnings on `net10.0` (the only target). Run `dotnet build` / `dotnet test` to verify.
 - **Report format:** findings ranked by severity (Critical / Major / Minor / Nit). Each finding gives the location, what's wrong, why it matters, and the suggested fix in words. End with a short verdict: ready, or what blocks it. Skip praise and filler.
 - Push back on design choices when a clearly better option exists, with the reason.
 - After each review, record decisions and lessons learned in `PROGRESS.md`.
@@ -26,15 +26,14 @@ The user writes the code; Claude reviews it. The unit of work is a whole workflo
 ## Status snapshot
 
 - 1.0.0 is unpublished. The public API can still change freely; no migration notes needed until release.
-- The README describes the old `DelgadoMaps` API. Don't trust it as a reference for current names.
+- The docs site (`docs/`) is the source of truth for usage; the README is packed into every package and gets trimmed in `RELEASE-PLAN.md` R5.
 
 ## Commands
 
 ```bash
-dotnet build                                   # whole solution, net8.0 + net9.0
+dotnet build                                   # whole solution, net10.0
 dotnet build AarxMaps.Core                     # single project
-dotnet test AarxMaps.Tests                     # all tests, both TFMs
-dotnet test AarxMaps.Tests -f net9.0           # what CI runs
+dotnet test AarxMaps.Tests                     # all tests
 dotnet test AarxMaps.Tests --filter "Package=Core"
 dotnet test AarxMaps.Tests --filter "Package=Core&Module=Http"
 ```
@@ -48,7 +47,10 @@ AarxMaps.Core/     HTTP client, request model, exceptions, JSON, caching, DI ent
 AarxMaps.Places/   Places API (New): text/nearby search, autocomplete, details, photos, reviews
 AarxMaps.Routes/   Routes API: computeRoutes (directions), computeRouteMatrix (distance matrix)
 AarxMaps.Tests/    Single xUnit project for all packages, split by package folder
+Directory.Build.props  Shared build and package settings (TFM, version, metadata, analyzers, symbols)
 ```
+
+`Directory.Build.props` applies `net10.0`, nullable and implicit usings to every project. Packaging, XML docs and analyzer settings apply to every project except `AarxMaps.Tests` (matched by project name, so a new non-packable project must be added to that condition). The csproj files only keep `PackageId`, `Description`, `PackageTags` and references.
 
 Places and Routes reference Core via `ProjectReference`. They never talk to `HttpClient` directly; they only use `IMapsApiClient`.
 
@@ -125,8 +127,8 @@ Follows the existing code; match it.
 
 ## CI / release
 
-- `.github/workflows/publish.yml`: on tag `v*.*.*` -> restore, build Release, test net9.0, pack, push all packages to nuget.org (`NUGET_API_KEY` secret). Versions are set per csproj (`<Version>`), so keep the three in sync before tagging.
-- `.github/workflows/docs.yml`: builds a Docusaurus site from `docs/` and deploys to GitHub Pages on push to `main`. `docs/` exists but is empty; the site gets scaffolded in Phase 4.
+- `.github/workflows/publish.yml`: on tag `v*.*.*` -> restore, fail if the tag isn't `v` + `Version`, build Release, test, pack, push all packages and symbols to nuget.org. Runs in the `nuget` GitHub environment (`NUGET_API_KEY` secret), with `contents: read`. `Version` and `PackageReleaseNotes` live once in `Directory.Build.props`; update both before tagging. Packages ship a `.snupkg` with SourceLink; `ContinuousIntegrationBuild` is on when `GITHUB_ACTIONS` is `true`.
+- `.github/workflows/docs.yml`: builds a Docusaurus site from `docs/` (Node 24) and deploys to GitHub Pages on push to `main` when `docs/**` or the workflow changes.
 - All packages pack the root `README.md` as their NuGet readme.
 
 ## Git workflow

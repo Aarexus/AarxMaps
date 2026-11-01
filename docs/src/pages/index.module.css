@@ -1,0 +1,79 @@
+/* Landing page. The hero is Ink in both themes; the brand colors only appear on the button,
+   because Bone text on Vermilion is 3.47:1. */
+
+.hero {
+  --ifm-hero-background-color: #0b0b0d;
+  --ifm-hero-text-color: #f2f0ed;
+  padding: 4rem 0;
+  text-align: center;
+}
+
+.logo {
+  margin-bottom: 1rem;
+}
+
+.tagline {
+  color: #9a9a9f;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+/* White on Crimson (6.2:1) in light mode, Ink on Vermilion (5.0:1) in dark mode. */
+.hero .primaryButton {
+  --ifm-button-color: #ffffff;
+}
+
+[data-theme='dark'] .hero .primaryButton {
+  --ifm-button-color: #0b0b0d;
+}
+
+.hero .secondaryButton {
+  background: transparent;
+  border: 1px solid #f2f0ed;
+  color: #f2f0ed;
+}
+
+.hero .secondaryButton:hover {
+  background: #f2f0ed;
+  color: #0b0b0d;
+}
+
+.section {
+  padding: 3rem 0;
+}
+
+.cardColumn {
+  margin-bottom: 1rem;
+}
+
+.card {
+  height: 100%;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  box-shadow: none;
+  color: inherit;
+}
+
+.card:hover {
+  border-color: var(--ifm-color-primary);
+  color: inherit;
+  text-decoration: none;
+}
+
+.cardTitle {
+  color: var(--ifm-color-primary);
+}
+
+@media screen and (max-width: 996px) {
+  .hero {
+    padding: 2.5rem 1rem;
+  }
+
+  .section {
+    padding: 2rem 0;
+  }
+}
