@@ -36,9 +36,10 @@ dotnet build AarxMaps.Core                     # single project
 dotnet test AarxMaps.Tests                     # all tests
 dotnet test AarxMaps.Tests --filter "Package=Core"
 dotnet test AarxMaps.Tests --filter "Package=Core&Module=Http"
+dotnet pack -c Release -o ./nupkgs            # .nupkg + .snupkg for Core, Places, Routes
 ```
 
-`GeneratePackageOnBuild` is on, so every build also produces `.nupkg` files.
+Builds don't produce packages; `dotnet pack` builds and packs (CI runs `pack --no-build` after its build).
 
 ## Solution layout
 
@@ -50,7 +51,7 @@ AarxMaps.Tests/    Single xUnit project for all packages, split by package folde
 Directory.Build.props  Shared build and package settings (TFM, version, metadata, analyzers, symbols)
 ```
 
-`Directory.Build.props` applies `net10.0`, nullable and implicit usings to every project. Packaging, XML docs and analyzer settings apply to every project except `AarxMaps.Tests` (matched by project name, so a new non-packable project must be added to that condition). The csproj files only keep `PackageId`, `Description`, `PackageTags` and references.
+`Directory.Build.props` applies `net10.0`, nullable and implicit usings to every project. Packaging, XML docs and analyzer settings apply to every project except `AarxMaps.Tests` (matched by project name, so a new non-packable project must be added to that condition). The csproj files only keep `PackageId`, `Description`, `PackageTags` and references. Places and Routes reference only Core; `Microsoft.Extensions.*` comes through Core's dependencies.
 
 Places and Routes reference Core via `ProjectReference`. They never talk to `HttpClient` directly; they only use `IMapsApiClient`.
 

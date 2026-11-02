@@ -15,7 +15,9 @@ Read order in a new session: `CLAUDE.md` -> `PROGRESS.md` -> this file. `DOC-PLA
 - **R3 done (2026-10-31):** Claude made the edits at the user's request; the user reviewed them.
 - **R4 done (2026-11-01):** `Release-steps` (docs + R1-R3) merged to `main`, Pages enabled, site live and checked. One fix (`trailingSlash: true`) is on the working tree and goes to `main` with R5.
 - **R5 done (2026-11-01):** README trimmed from 682 to 107 lines; the user read it and approved it.
-- **Next:** the R5 PR to `main` (README + `trailingSlash` fix), then R6.
+- **R6 and R7 done (2026-11-01):** packages inspected and installed from a local feed into fresh apps; all checks pass. Both R6 findings fixed at the user's request, and R7 rerun on the new packages.
+- **Release order agreed (2026-11-01):** R6-R8 don't change the repo, so they run on the working tree first. Then one final commit and PR to `main` with everything (README, `trailingSlash`, tracking, any fixes), then R9 tags that commit. R10's tracking updates are a separate commit after the release.
+- **Next:** R8.
 - **Blocked:** nothing.
 
 ## Steps
@@ -122,17 +124,33 @@ Was the first half of Work step 11; follow `DOC-PLAN.md` "README trim". Links to
 
 Was the second half of Work step 11.
 
-- [ ] Run `dotnet pack -c Release`, then check each `.nupkg` and `.snupkg`:
+- [x] Run `dotnet pack -c Release`, then check each `.nupkg` and `.snupkg`:
   - `lib/net10.0` only, with the DLL and XML docs. README and icon are present.
   - License expression, project URL, repository commit and release notes are in the nuspec.
   - One dependency group (`net10.0`) with the 10.0.x versions from R1. The version is `1.0.0`.
-- [ ] Check that the README renders the way nuget.org renders it: no relative links or images, no HTML that nuget.org strips.
+- [x] Check that the README renders the way nuget.org renders it: no relative links or images, no HTML that nuget.org strips.
+- **Result (2026-11-01):** packed the CI way (clean `dotnet build -c Release`, then `dotnet pack --no-build`), 0 warnings.
+  - Each `.nupkg`: nuspec, `README.md` (identical to the repo file), `icon.png` (identical), `lib/net10.0/<id>.dll` and `.xml`. Each `.snupkg`: the PDB only.
+  - Nuspec: version `1.0.0`, MIT expression, docs-site project URL, release notes, repository URL + commit. One `net10.0` dependency group: Core -> four `Microsoft.Extensions.*` 10.0.14; Places -> `AarxMaps.Core` 1.0.0 + `Microsoft.Extensions.DependencyInjection` 10.0.14; Routes -> `AarxMaps.Core` 1.0.0.
+  - DLLs: `AssemblyVersion` 1.0.0.0, informational version `1.0.0+<commit>`.
+  - README: no relative links, no images, no HTML (checked in R5).
+- **Findings (both fixed 2026-11-01 at the user's request):**
+  1. **Minor:** a standalone `dotnet pack` on a clean tree fails with NU5026 (DLL not found). With `GeneratePackageOnBuild=true`, NuGet's `Pack` target no longer depends on `Build` (`NuGet.Build.Tasks.Pack.targets`), because the build is expected to pack. CI is unaffected (build, then `pack --no-build`). Fix: drop `GeneratePackageOnBuild` from `Directory.Build.props`. Builds then stop writing packages, `dotnet pack` works on its own, and CI still works unchanged. **Fixed:** removed. Verified: builds write no packages, a standalone `dotnet pack -c Release` on a clean tree produces all six files, and the CI sequence (restore, build, test, `pack --no-build`) still gives 0 warnings, 1,284 tests and six files.
+  2. **Nit:** Places declares `Microsoft.Extensions.DependencyInjection` directly and Routes doesn't; both get it through Core. Drop the Places reference for consistency, or leave it. **Fixed:** removed from `AarxMaps.Places.csproj`. Places builds with 0 warnings (DI resolves transitively at 10.0.14), and its nuspec now depends only on `AarxMaps.Core` 1.0.0, like Routes.
+  - **R7 rerun on the fixed packages (2026-11-01):** same results: web and console apps compile with `-warnaserror`, the runtime console exits 0 with all four checks, `net8.0` still fails with NU1202, nothing in the global cache.
 
 ### R7. Smoke test from the packages (Claude)
 
 Every check so far used `ProjectReference`. Here, put the R6 packages in a local folder feed and create a fresh console app and a fresh ASP.NET Core app on `net10.0` that reference `AarxMaps.*` 1.0.0 from that feed. Compile the Quick start snippets in them with `-warnaserror`. This catches packaging mistakes (missing dependency, wrong TFM) that the solution build can't see. No live Google calls.
 
 Also try to install the packages into a `net8.0` app. The restore should fail with NU1202 (package not compatible). Quote the message in Coming from DelgadoMaps if it helps readers recognize it.
+
+- [x] **Result (2026-11-01):** local folder feed with package source mapping (`AarxMaps.*` -> local, everything else -> nuget.org) and an isolated `NUGET_PACKAGES` cache, so the local 1.0.0 never reaches the global cache (checked: it didn't).
+  - `dotnet add package AarxMaps.Places/Routes --version 1.0.0` works; `AarxMaps.Core` comes in transitively.
+  - Fresh `net10.0` web app with the README quick start: builds with `-warnaserror`, 0 warnings.
+  - Fresh `net10.0` console app with the Introduction's combined example (Places -> place ID -> Routes): builds with `-warnaserror`, 0 warnings.
+  - Runtime console (no network): resolves `IPlacesService` and `IRoutesService`, builds a text search and a route request, rejects `LatLng(91, 0)` with `MapsInvalidRequestException`, and rejects a missing API key with `OptionsValidationException` ("ApiKey must be provided."). Exit code 0.
+  - `net8.0` app: `error: NU1202: Package AarxMaps.Places 1.0.0 is not compatible with net8.0 (.NETCoreApp,Version=v8.0). Package AarxMaps.Places 1.0.0 supports: net10.0 (.NETCoreApp,Version=v10.0)`. Coming from DelgadoMaps already names NU1202, so no docs change.
 
 ### R8. nuget.org setup (user)
 
@@ -168,9 +186,14 @@ Also try to install the packages into a `net8.0` app. The restore should fail wi
 - **Release notes and version are hardcoded per release (2026-10-31).** `PackageReleaseNotes` names v1.0.0 explicitly. Each release updates `Version` and `PackageReleaseNotes` together in `Directory.Build.props`.
 - **Publish job runs in a `nuget` environment (2026-10-31).** Lets the user add a required reviewer and scope the API key to that job. Harmless if left unconfigured.
 - **`trailingSlash: true` on the docs site (2026-11-01).** Removes the GitHub Pages 301 on every page. `true` instead of `false` because it keeps the `index.html` layout, so both `/path` (redirect) and `/path/` work; with `false`, a link with a trailing slash would 404 on Pages.
+- **No `GeneratePackageOnBuild` (user, 2026-11-01).** Packing is `dotnet pack`'s job; builds stay fast and don't write packages.
+- **Modules reference only Core (user, 2026-11-01).** Places and Routes get `Microsoft.Extensions.*` through Core, so the dependency versions are set in one csproj.
 - **Smoke test from packages, not projects (2026-10-31).** Every earlier check used `ProjectReference`. R7 installs the packed `.nupkg` files from a local folder into fresh apps, because only that catches packaging mistakes.
 
 ## Lessons learned
+
+- **`GeneratePackageOnBuild` changes what `dotnet pack` does (2026-11-01).** With it on, `Pack` skips `Build`, so `dotnet pack` on a clean tree fails with NU5026. Earlier checks passed only because `bin/` already held a build.
+- **Isolate the NuGet cache when smoke testing a local feed (2026-11-01).** A locally packed 1.0.0 in `~/.nuget/packages` would be reused later instead of the nuget.org 1.0.0 (same ID and version), hiding problems in the published package. Set `NUGET_PACKAGES` to a scratch folder.
 
 - **Set `trailingSlash` explicitly for Docusaurus on GitHub Pages (2026-11-01).** Left unset, the site builds and works, but every canonical/sitemap URL costs a 301. `npm run build` and `npm run serve` don't show it; only requests against the live host do.
 
