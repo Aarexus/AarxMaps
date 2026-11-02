@@ -27,6 +27,9 @@ const config: Config = {
   // GitHub Pages deployment config.
   organizationName: 'Aarexus',
   projectName: 'AarxMaps',
+  // Pages are emitted as <path>/index.html, and GitHub Pages redirects /<path> to /<path>/.
+  // true makes links, canonical URLs and the sitemap use the trailing slash, so nothing redirects.
+  trailingSlash: true,
 
   onBrokenLinks: 'throw',
   markdown: {
@@ -100,7 +103,7 @@ const config: Config = {
           items: [
             { label: 'GitHub', href: 'https://github.com/JSebas-11' },
             { label: 'LinkedIn', href: 'https://www.linkedin.com/in/jsebas11/' },
-            { label: 'Instagram', href: 'https://www.instagram.com/juans3_11.py/' },
+            { label: 'Instagram', href: 'https://www.instagram.com/cinn.shady11/' },
           ],
         },
       ],

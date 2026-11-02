@@ -26,7 +26,7 @@ The user writes the code; Claude reviews it. The unit of work is a whole workflo
 ## Status snapshot
 
 - 1.0.0 is unpublished. The public API can still change freely; no migration notes needed until release.
-- The docs site (`docs/`) is the source of truth for usage; the README is packed into every package and gets trimmed in `RELEASE-PLAN.md` R5.
+- The docs site (`docs/`, live at `https://aarexus.github.io/AarxMaps/`) is the source of truth for usage. The README is a short landing page (requirements, install, quick start, links to every site page) packed into every package, so it uses absolute links and no HTML.
 
 ## Commands
 

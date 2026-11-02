@@ -12,8 +12,10 @@ Read order in a new session: `CLAUDE.md` -> `PROGRESS.md` -> this file. `DOC-PLA
 - **Target changed (2026-10-31):** 1.0.0 targets `net10.0` only (see Critical decisions).
 - **R1 done (2026-10-31):** code, docs and tracking files are on `net10.0`. The R2 vulnerability check was run at the same time.
 - **R2 done (2026-10-31):** Claude made the edits at the user's request; the user reviewed them.
-- **R3 done (2026-10-31), waiting for the user's review:** Claude made the edits at the user's request.
-- **Next:** user reviews R3, then R4.
+- **R3 done (2026-10-31):** Claude made the edits at the user's request; the user reviewed them.
+- **R4 done (2026-11-01):** `Release-steps` (docs + R1-R3) merged to `main`, Pages enabled, site live and checked. One fix (`trailingSlash: true`) is on the working tree and goes to `main` with R5.
+- **R5 done (2026-11-01):** README trimmed from 682 to 107 lines; the user read it and approved it.
+- **Next:** the R5 PR to `main` (README + `trailingSlash` fix), then R6.
 - **Blocked:** nothing.
 
 ## Steps
@@ -90,16 +92,31 @@ Checked 2026-10-31:
 
 Was Work step 10.
 
-- [ ] **User:** commit `.github/workflows/`, `icon.png` and the csproj/props changes in one release commit, as `DOC-PLAN.md` Critical decisions ("Workflows committed last") says. Enable Pages (Settings -> Pages -> Source: GitHub Actions). Merge to `main` by PR (`Phase4: Docs`).
-- [ ] **Claude:** check `https://aarexus.github.io/AarxMaps/`:
+- [x] **User:** commit `.github/workflows/`, `icon.png` and the csproj/props changes in one release commit, as `DOC-PLAN.md` Critical decisions ("Workflows committed last") says. Enable Pages (Settings -> Pages -> Source: GitHub Actions). Merge to `main` by PR (`Phase4: Docs`).
+- [x] **Claude:** check `https://aarexus.github.io/AarxMaps/`:
   - Every page loads under `/AarxMaps/`, and fonts, icon and favicon load (no 404s in the network log).
   - The social card URL resolves.
   - Both themes render, and the 404 page works.
   - Spot-check external links.
+- **Result (2026-11-01):**
+  - All 25 sitemap pages load (after a redirect, see below). Every asset referenced by the pages and the CSS returns 200: both fonts (Inter, Sora), icon, favicon, social card, JS and CSS bundles.
+  - In a browser (Playwright): home page in light and directions page in dark render correctly, fonts loaded, no console errors, no failed requests.
+  - Unknown URLs return 404 with the site's "Page Not Found" page.
+  - All 43 external links checked: 42 return 200; LinkedIn returns 999, its standard answer to automated requests (not broken).
+  - The Node 24 docs build passed on CI (first `docs.yml` run).
+  - **Finding, fixed:** every docs URL answered 301. Docusaurus emits `<path>/index.html`, GitHub Pages redirects `/<path>` to `/<path>/`, and with `trailingSlash` unset the sitemap, canonical and `og:url` all used the no-slash form. `docs/docusaurus.config.ts` now sets `trailingSlash: true`; the rebuilt site uses `/` everywhere and the output paths are unchanged. Deploys with the R5 PR.
 
 ### R5. Trim the README (Claude, user reads)
 
-Was the first half of Work step 11; follow `DOC-PLAN.md` "README trim". The README is packed into every package, so do it before R6. Use absolute links only, now that the site is live. Compile any snippet that stays.
+Was the first half of Work step 11; follow `DOC-PLAN.md` "README trim". Links to the site use the trailing-slash form (`.../docs/intro/`), matching `trailingSlash: true`. The README is packed into every package, so do it before R6. Use absolute links only, now that the site is live. Compile any snippet that stays.
+
+- [x] **Result (2026-11-01):**
+  - Kept: intro paragraph, packages table, .NET line, requirements, install, quick start, license and the Google disclaimer. Added a docs-site link under the intro and a "Documentation" list with every site page, grouped by sidebar section.
+  - Dropped (all on the site): contents, configuration, registration rules, caching, every Places and Routes section, errors, cancellation, custom endpoints, usage notes, known limitations, namespace reference, and the console example. The misleading "services are safe to inject into singletons" line (`DOC-PLAN.md` finding) went with usage notes.
+  - The quick start keeps its combined shape (Places and Routes in one ASP.NET Core `Program.cs`) but now matches the site's Quick start: key from the `AarxMaps` configuration section via user secrets (was `GoogleMaps:ApiKey`), and the route picked by `RouteLabel.DefaultRoute` (was the first route).
+  - Checks: all 27 links return 200 directly (no redirects), no relative links, no HTML. The quick start compiles in a fresh `net10.0` web app with `-warnaserror`.
+- [x] Read and approved by the user (2026-11-01).
+- [ ] **User:** open the PR to `main` with the README and the `trailingSlash` fix. Title suggestion: `Phase4: README trim`.
 
 ### R6. Pack and inspect (Claude)
 
@@ -150,9 +167,12 @@ Also try to install the packages into a `net8.0` app. The restore should fail wi
 - **`Directory.Build.props` scope (2026-10-31).** Shared settings (TFM, nullable, implicit usings) apply to every project. Packaging, XML docs and analyzer settings are conditioned on `'$(MSBuildProjectName)' != 'AarxMaps.Tests'`. `IsPackable` can't be the condition, because the props file is evaluated before the csproj sets it.
 - **Release notes and version are hardcoded per release (2026-10-31).** `PackageReleaseNotes` names v1.0.0 explicitly. Each release updates `Version` and `PackageReleaseNotes` together in `Directory.Build.props`.
 - **Publish job runs in a `nuget` environment (2026-10-31).** Lets the user add a required reviewer and scope the API key to that job. Harmless if left unconfigured.
+- **`trailingSlash: true` on the docs site (2026-11-01).** Removes the GitHub Pages 301 on every page. `true` instead of `false` because it keeps the `index.html` layout, so both `/path` (redirect) and `/path/` work; with `false`, a link with a trailing slash would 404 on Pages.
 - **Smoke test from packages, not projects (2026-10-31).** Every earlier check used `ProjectReference`. R7 installs the packed `.nupkg` files from a local folder into fresh apps, because only that catches packaging mistakes.
 
 ## Lessons learned
+
+- **Set `trailingSlash` explicitly for Docusaurus on GitHub Pages (2026-11-01).** Left unset, the site builds and works, but every canonical/sitemap URL costs a 301. `npm run build` and `npm run serve` don't show it; only requests against the live host do.
 
 - **Check action versions and runtime support when touching workflows (2026-10-31).** The plan said `docs.yml` needed no changes, but it ran on Node 20 (end of life) with actions three majors behind. The GitHub releases API (`/repos/<owner>/<action>/releases/latest`) and Node's `schedule.json` answer both in seconds.
 
