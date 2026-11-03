@@ -17,7 +17,8 @@ Read order in a new session: `CLAUDE.md` -> `PROGRESS.md` -> this file. `DOC-PLA
 - **R5 done (2026-11-01):** README trimmed from 682 to 107 lines; the user read it and approved it.
 - **R6 and R7 done (2026-11-01):** packages inspected and installed from a local feed into fresh apps; all checks pass. Both R6 findings fixed at the user's request, and R7 rerun on the new packages.
 - **Release order agreed (2026-11-01):** R6-R8 don't change the repo, so they run on the working tree first. Then one final commit and PR to `main` with everything (README, `trailingSlash`, tracking, any fixes), then R9 tags that commit. R10's tracking updates are a separate commit after the release.
-- **Next:** R8.
+- **R8 done (2026-11-03):** trusted publishing policy and `nuget` environment set up and checked, prefix reservation requested (pending at nuget.org).
+- **Next:** final commit and PR to `main` (everything since R4), then Claude checks the redeployed site, then R9.
 - **Blocked:** nothing.
 
 ## Steps
@@ -154,11 +155,19 @@ Also try to install the packages into a `net8.0` app. The restore should fail wi
 
 ### R8. nuget.org setup (user)
 
-- [ ] Recheck that the IDs are free.
-- [ ] Optional: request ID prefix reservation for `AarxMaps.*`. Packages then show a verified mark and nobody else can publish under the prefix.
-- [ ] Create an API key: push-only, glob `AarxMaps.*`, with an expiry. Store it as `NUGET_API_KEY` in the `nuget` environment (Settings -> Environments). A repo secret also works, since environment jobs see repo secrets.
-- [ ] Optional: add yourself as required reviewer on the `nuget` environment, so a pushed tag waits for approval before anything is published. GitHub creates the environment on the first run if it doesn't exist, but without protection rules.
-- [ ] Recheck `PROGRESS.md` Known flaws against the Known limitations page.
+- [x] Recheck that the IDs are free. Checked 2026-11-02 (Claude): `AarxMaps.Core`, `.Places`, `.Routes` return 404 on the flat container and 0 search hits. `D3lg4doMaps.*` is owned by the `JSebas-11` account. A profile named `Aarexus` exists on nuget.org with no packages; the user confirms whether it's theirs before choosing the package owner.
+- **Package owner: the `Aarexus` nuget.org organization (user, 2026-11-02).** The user owns it and is a member through the `JSebas-11` account.
+- [x] Request ID prefix reservation for `AarxMaps.*` (user wants it). Email sent by the user 2026-11-02; waiting for nuget.org's answer. Email `account@nuget.org` from the owner side with the owner display name (`Aarexus`) and the prefix. Packages then show a verified mark and nobody else can publish under the prefix; existing packages owned by `Aarexus` get the mark too, so it doesn't block the release.
+- [x] **Trusted publishing policy instead of an API key** (nuget.org recommends it; no long-lived secret). Logged in as `JSebas-11`: username menu -> Trusted Publishing -> add policy:
+  - Package owner `Aarexus`, repository owner `Aarexus`, repository `AarxMaps`, workflow file `publish.yml` (file name only), environment `nuget`.
+  - Scope: push new packages and new versions, glob `AarxMaps.*`, if the form offers scopes.
+  - If the policy shows as temporarily active (7 days), publish within that window or restart it; the first successful publish makes it permanent.
+- [x] `publish.yml` switched to trusted publishing (Claude, 2026-11-02): `id-token: write` next to `contents: read`, a `NuGet/login@v1` step (`user: JSebas-11`, the account that creates the policy) right before the push, and the push uses its `NUGET_API_KEY` output (valid 1 hour). No `NUGET_API_KEY` secret anymore. Parses as YAML; the OIDC exchange can only be tested by the release run. Known issue NuGet/login#6 (401 with reusable workflows) doesn't apply: `publish.yml` isn't reusable.
+- [x] GitHub environment `nuget` (Settings -> Environments): required reviewer = the user, "Prevent self-review" off, deployment tag rule `v*.*.*`. No secrets needed. Delete any leftover repo-level `NUGET_API_KEY` secret from the D3lg4doMaps setup.
+  - Set up by the user 2026-11-02 (policy too). Checked by Claude through the public API: reviewer `JSebas-11`, self-review allowed: OK. **Tag rule is `v*.*.*.` (trailing dot), which `v1.0.0` doesn't match, so the release would be blocked: fix to `v*.*.*`.** There's also a `main` branch rule; not needed (the workflow only runs on tags) and it opens the environment to any workflow on `main`: remove it.
+  - Recheck 2026-11-02: `main` rule removed. The tag rule is still stored as `v*.*.*.` (raw API value, 7 characters); the trailing dot is easy to miss in the UI. User to delete it and retype `v*.*.*`.
+  - Fixed 2026-11-03: the only rule is the tag rule `v*.*.*` (raw API value), which matches `v1.0.0`. Reviewer `JSebas-11`, self-review allowed. Environment ready.
+- [x] Recheck `PROGRESS.md` Known flaws against the Known limitations page. Checked 2026-11-02 (Claude): all four flaws are on the page with matching scope and workarounds (language/region, internal setters, Routes `null` handling, sliding expiration). The page also lists items missing from `PROGRESS.md` (retries, timeout exception, cache key without language, request options); they come from `DOC-PLAN.md` and get merged in R10. No doc change.
 
 ### R9. Release (user)
 
@@ -184,13 +193,17 @@ Also try to install the packages into a `net8.0` app. The restore should fail wi
   - **Supersedes** the same-day decision to use per-TFM `Microsoft.Extensions` versions (8.0.x for `net8.0`, 9.0.x for `net9.0`), and the `Dotnet 10 target` stash, which added `net10.0` next to the old targets.
 - **`Directory.Build.props` scope (2026-10-31).** Shared settings (TFM, nullable, implicit usings) apply to every project. Packaging, XML docs and analyzer settings are conditioned on `'$(MSBuildProjectName)' != 'AarxMaps.Tests'`. `IsPackable` can't be the condition, because the props file is evaluated before the csproj sets it.
 - **Release notes and version are hardcoded per release (2026-10-31).** `PackageReleaseNotes` names v1.0.0 explicitly. Each release updates `Version` and `PackageReleaseNotes` together in `Directory.Build.props`.
-- **Publish job runs in a `nuget` environment (2026-10-31).** Lets the user add a required reviewer and scope the API key to that job. Harmless if left unconfigured.
+- **Publish job runs in a `nuget` environment (2026-10-31).** Lets the user add a required reviewer; the trusted publishing policy is also bound to it. Harmless if left unconfigured.
+- **Trusted publishing, no API key (user, 2026-11-02).** nuget.org exchanges the workflow's GitHub OIDC token for a one-hour key, bound to the `Aarexus/AarxMaps` repo, `publish.yml` and the `nuget` environment. Nothing to store, rotate or leak. Supersedes the R8 API key plan.
+- **Packages owned by the `Aarexus` organization (user, 2026-11-02),** not the personal `JSebas-11` account that owns `D3lg4doMaps.*`. Matches the package author.
 - **`trailingSlash: true` on the docs site (2026-11-01).** Removes the GitHub Pages 301 on every page. `true` instead of `false` because it keeps the `index.html` layout, so both `/path` (redirect) and `/path/` work; with `false`, a link with a trailing slash would 404 on Pages.
 - **No `GeneratePackageOnBuild` (user, 2026-11-01).** Packing is `dotnet pack`'s job; builds stay fast and don't write packages.
 - **Modules reference only Core (user, 2026-11-01).** Places and Routes get `Microsoft.Extensions.*` through Core, so the dependency versions are set in one csproj.
 - **Smoke test from packages, not projects (2026-10-31).** Every earlier check used `ProjectReference`. R7 installs the packed `.nupkg` files from a local folder into fresh apps, because only that catches packaging mistakes.
 
 ## Lessons learned
+
+- **Check environment rules through the API, not by eye (2026-11-02).** `GET /repos/<owner>/<repo>/environments/<name>/deployment-branch-policies` is public for public repos and showed a tag rule with a stray trailing dot that would have blocked the release.
 
 - **`GeneratePackageOnBuild` changes what `dotnet pack` does (2026-11-01).** With it on, `Pack` skips `Build`, so `dotnet pack` on a clean tree fails with NU5026. Earlier checks passed only because `bin/` already held a build.
 - **Isolate the NuGet cache when smoke testing a local feed (2026-11-01).** A locally packed 1.0.0 in `~/.nuget/packages` would be reused later instead of the nuget.org 1.0.0 (same ID and version), hiding problems in the published package. Set `NUGET_PACKAGES` to a scratch folder.

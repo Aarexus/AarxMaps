@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write  # GitHub OIDC token for nuget.org trusted publishing
 
 jobs:
   publish:
@@ -42,8 +43,16 @@ jobs:
       - name: Pack
         run: dotnet pack -c Release --no-build -o ./nupkgs
 
+      # Trusted publishing: exchanges the OIDC token for a nuget.org API key valid for 1 hour.
+      # The policy is owned by the Aarexus organization; `user` is the nuget.org account that created it.
+      - name: NuGet login
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: JSebas-11
+
       # Pushes every .nupkg; the matching .snupkg next to each one is pushed to the symbol server automatically.
       - name: Publish to NuGet
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
         run: dotnet nuget push ./nupkgs/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate

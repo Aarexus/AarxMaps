@@ -128,7 +128,7 @@ Follows the existing code; match it.
 
 ## CI / release
 
-- `.github/workflows/publish.yml`: on tag `v*.*.*` -> restore, fail if the tag isn't `v` + `Version`, build Release, test, pack, push all packages and symbols to nuget.org. Runs in the `nuget` GitHub environment (`NUGET_API_KEY` secret), with `contents: read`. `Version` and `PackageReleaseNotes` live once in `Directory.Build.props`; update both before tagging. Packages ship a `.snupkg` with SourceLink; `ContinuousIntegrationBuild` is on when `GITHUB_ACTIONS` is `true`.
+- `.github/workflows/publish.yml`: on tag `v*.*.*` -> restore, fail if the tag isn't `v` + `Version`, build Release, test, pack, push all packages and symbols to nuget.org. Authenticates with nuget.org trusted publishing (`NuGet/login`, OIDC, no stored API key; policy owned by the `Aarexus` org, `user: JSebas-11`). Runs in the `nuget` GitHub environment with `contents: read` + `id-token: write`. `Version` and `PackageReleaseNotes` live once in `Directory.Build.props`; update both before tagging. Packages ship a `.snupkg` with SourceLink; `ContinuousIntegrationBuild` is on when `GITHUB_ACTIONS` is `true`.
 - `.github/workflows/docs.yml`: builds a Docusaurus site from `docs/` (Node 24) and deploys to GitHub Pages on push to `main` when `docs/**` or the workflow changes.
 - All packages pack the root `README.md` as their NuGet readme.
 
