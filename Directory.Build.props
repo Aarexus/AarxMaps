@@ -28,7 +28,6 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReleaseNotes>First release of AarxMaps, formerly D3lg4doMaps. Requires .NET 10. Release notes: https://github.com/Aarexus/AarxMaps/releases/tag/v1.0.0</PackageReleaseNotes>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

@@ -26,7 +26,7 @@ The user writes the code; Claude reviews it. The unit of work is a whole workflo
 ## Status snapshot
 
 - 1.0.0 is unpublished. The public API can still change freely; no migration notes needed until release.
-- The docs site (`docs/`) is the source of truth for usage; the README is packed into every package and gets trimmed in `RELEASE-PLAN.md` R5.
+- The docs site (`docs/`, live at `https://aarexus.github.io/AarxMaps/`) is the source of truth for usage. The README is a short landing page (requirements, install, quick start, links to every site page) packed into every package, so it uses absolute links and no HTML.
 
 ## Commands
 
@@ -36,9 +36,10 @@ dotnet build AarxMaps.Core                     # single project
 dotnet test AarxMaps.Tests                     # all tests
 dotnet test AarxMaps.Tests --filter "Package=Core"
 dotnet test AarxMaps.Tests --filter "Package=Core&Module=Http"
+dotnet pack -c Release -o ./nupkgs            # .nupkg + .snupkg for Core, Places, Routes
 ```
 
-`GeneratePackageOnBuild` is on, so every build also produces `.nupkg` files.
+Builds don't produce packages; `dotnet pack` builds and packs (CI runs `pack --no-build` after its build).
 
 ## Solution layout
 
@@ -50,7 +51,7 @@ AarxMaps.Tests/    Single xUnit project for all packages, split by package folde
 Directory.Build.props  Shared build and package settings (TFM, version, metadata, analyzers, symbols)
 ```
 
-`Directory.Build.props` applies `net10.0`, nullable and implicit usings to every project. Packaging, XML docs and analyzer settings apply to every project except `AarxMaps.Tests` (matched by project name, so a new non-packable project must be added to that condition). The csproj files only keep `PackageId`, `Description`, `PackageTags` and references.
+`Directory.Build.props` applies `net10.0`, nullable and implicit usings to every project. Packaging, XML docs and analyzer settings apply to every project except `AarxMaps.Tests` (matched by project name, so a new non-packable project must be added to that condition). The csproj files only keep `PackageId`, `Description`, `PackageTags` and references. Places and Routes reference only Core; `Microsoft.Extensions.*` comes through Core's dependencies.
 
 Places and Routes reference Core via `ProjectReference`. They never talk to `HttpClient` directly; they only use `IMapsApiClient`.
 
@@ -127,7 +128,7 @@ Follows the existing code; match it.
 
 ## CI / release
 
-- `.github/workflows/publish.yml`: on tag `v*.*.*` -> restore, fail if the tag isn't `v` + `Version`, build Release, test, pack, push all packages and symbols to nuget.org. Runs in the `nuget` GitHub environment (`NUGET_API_KEY` secret), with `contents: read`. `Version` and `PackageReleaseNotes` live once in `Directory.Build.props`; update both before tagging. Packages ship a `.snupkg` with SourceLink; `ContinuousIntegrationBuild` is on when `GITHUB_ACTIONS` is `true`.
+- `.github/workflows/publish.yml`: on tag `v*.*.*` -> restore, fail if the tag isn't `v` + `Version`, build Release, test, pack, push all packages and symbols to nuget.org. Authenticates with nuget.org trusted publishing (`NuGet/login`, OIDC, no stored API key; policy owned by the `Aarexus` org, `user: JSebas-11`). Runs in the `nuget` GitHub environment with `contents: read` + `id-token: write`. `Version` and `PackageReleaseNotes` live once in `Directory.Build.props`; update both before tagging. Packages ship a `.snupkg` with SourceLink; `ContinuousIntegrationBuild` is on when `GITHUB_ACTIONS` is `true`.
 - `.github/workflows/docs.yml`: builds a Docusaurus site from `docs/` (Node 24) and deploys to GitHub Pages on push to `main` when `docs/**` or the workflow changes.
 - All packages pack the root `README.md` as their NuGet readme.
 

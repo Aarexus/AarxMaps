@@ -12,8 +12,13 @@ Read order in a new session: `CLAUDE.md` -> `PROGRESS.md` -> this file. `DOC-PLA
 - **Target changed (2026-10-31):** 1.0.0 targets `net10.0` only (see Critical decisions).
 - **R1 done (2026-10-31):** code, docs and tracking files are on `net10.0`. The R2 vulnerability check was run at the same time.
 - **R2 done (2026-10-31):** Claude made the edits at the user's request; the user reviewed them.
-- **R3 done (2026-10-31), waiting for the user's review:** Claude made the edits at the user's request.
-- **Next:** user reviews R3, then R4.
+- **R3 done (2026-10-31):** Claude made the edits at the user's request; the user reviewed them.
+- **R4 done (2026-11-01):** `Release-steps` (docs + R1-R3) merged to `main`, Pages enabled, site live and checked. One fix (`trailingSlash: true`) is on the working tree and goes to `main` with R5.
+- **R5 done (2026-11-01):** README trimmed from 682 to 107 lines; the user read it and approved it.
+- **R6 and R7 done (2026-11-01):** packages inspected and installed from a local feed into fresh apps; all checks pass. Both R6 findings fixed at the user's request, and R7 rerun on the new packages.
+- **Release order agreed (2026-11-01):** R6-R8 don't change the repo, so they run on the working tree first. Then one final commit and PR to `main` with everything (README, `trailingSlash`, tracking, any fixes), then R9 tags that commit. R10's tracking updates are a separate commit after the release.
+- **R8 done (2026-11-03):** trusted publishing policy and `nuget` environment set up and checked, prefix reservation requested (pending at nuget.org).
+- **Next:** final commit and PR to `main` (everything since R4), then Claude checks the redeployed site, then R9.
 - **Blocked:** nothing.
 
 ## Steps
@@ -90,26 +95,50 @@ Checked 2026-10-31:
 
 Was Work step 10.
 
-- [ ] **User:** commit `.github/workflows/`, `icon.png` and the csproj/props changes in one release commit, as `DOC-PLAN.md` Critical decisions ("Workflows committed last") says. Enable Pages (Settings -> Pages -> Source: GitHub Actions). Merge to `main` by PR (`Phase4: Docs`).
-- [ ] **Claude:** check `https://aarexus.github.io/AarxMaps/`:
+- [x] **User:** commit `.github/workflows/`, `icon.png` and the csproj/props changes in one release commit, as `DOC-PLAN.md` Critical decisions ("Workflows committed last") says. Enable Pages (Settings -> Pages -> Source: GitHub Actions). Merge to `main` by PR (`Phase4: Docs`).
+- [x] **Claude:** check `https://aarexus.github.io/AarxMaps/`:
   - Every page loads under `/AarxMaps/`, and fonts, icon and favicon load (no 404s in the network log).
   - The social card URL resolves.
   - Both themes render, and the 404 page works.
   - Spot-check external links.
+- **Result (2026-11-01):**
+  - All 25 sitemap pages load (after a redirect, see below). Every asset referenced by the pages and the CSS returns 200: both fonts (Inter, Sora), icon, favicon, social card, JS and CSS bundles.
+  - In a browser (Playwright): home page in light and directions page in dark render correctly, fonts loaded, no console errors, no failed requests.
+  - Unknown URLs return 404 with the site's "Page Not Found" page.
+  - All 43 external links checked: 42 return 200; LinkedIn returns 999, its standard answer to automated requests (not broken).
+  - The Node 24 docs build passed on CI (first `docs.yml` run).
+  - **Finding, fixed:** every docs URL answered 301. Docusaurus emits `<path>/index.html`, GitHub Pages redirects `/<path>` to `/<path>/`, and with `trailingSlash` unset the sitemap, canonical and `og:url` all used the no-slash form. `docs/docusaurus.config.ts` now sets `trailingSlash: true`; the rebuilt site uses `/` everywhere and the output paths are unchanged. Deploys with the R5 PR.
 
 ### R5. Trim the README (Claude, user reads)
 
-Was the first half of Work step 11; follow `DOC-PLAN.md` "README trim". The README is packed into every package, so do it before R6. Use absolute links only, now that the site is live. Compile any snippet that stays.
+Was the first half of Work step 11; follow `DOC-PLAN.md` "README trim". Links to the site use the trailing-slash form (`.../docs/intro/`), matching `trailingSlash: true`. The README is packed into every package, so do it before R6. Use absolute links only, now that the site is live. Compile any snippet that stays.
+
+- [x] **Result (2026-11-01):**
+  - Kept: intro paragraph, packages table, .NET line, requirements, install, quick start, license and the Google disclaimer. Added a docs-site link under the intro and a "Documentation" list with every site page, grouped by sidebar section.
+  - Dropped (all on the site): contents, configuration, registration rules, caching, every Places and Routes section, errors, cancellation, custom endpoints, usage notes, known limitations, namespace reference, and the console example. The misleading "services are safe to inject into singletons" line (`DOC-PLAN.md` finding) went with usage notes.
+  - The quick start keeps its combined shape (Places and Routes in one ASP.NET Core `Program.cs`) but now matches the site's Quick start: key from the `AarxMaps` configuration section via user secrets (was `GoogleMaps:ApiKey`), and the route picked by `RouteLabel.DefaultRoute` (was the first route).
+  - Checks: all 27 links return 200 directly (no redirects), no relative links, no HTML. The quick start compiles in a fresh `net10.0` web app with `-warnaserror`.
+- [x] Read and approved by the user (2026-11-01).
+- [ ] **User:** open the PR to `main` with the README and the `trailingSlash` fix. Title suggestion: `Phase4: README trim`.
 
 ### R6. Pack and inspect (Claude)
 
 Was the second half of Work step 11.
 
-- [ ] Run `dotnet pack -c Release`, then check each `.nupkg` and `.snupkg`:
+- [x] Run `dotnet pack -c Release`, then check each `.nupkg` and `.snupkg`:
   - `lib/net10.0` only, with the DLL and XML docs. README and icon are present.
   - License expression, project URL, repository commit and release notes are in the nuspec.
   - One dependency group (`net10.0`) with the 10.0.x versions from R1. The version is `1.0.0`.
-- [ ] Check that the README renders the way nuget.org renders it: no relative links or images, no HTML that nuget.org strips.
+- [x] Check that the README renders the way nuget.org renders it: no relative links or images, no HTML that nuget.org strips.
+- **Result (2026-11-01):** packed the CI way (clean `dotnet build -c Release`, then `dotnet pack --no-build`), 0 warnings.
+  - Each `.nupkg`: nuspec, `README.md` (identical to the repo file), `icon.png` (identical), `lib/net10.0/<id>.dll` and `.xml`. Each `.snupkg`: the PDB only.
+  - Nuspec: version `1.0.0`, MIT expression, docs-site project URL, release notes, repository URL + commit. One `net10.0` dependency group: Core -> four `Microsoft.Extensions.*` 10.0.14; Places -> `AarxMaps.Core` 1.0.0 + `Microsoft.Extensions.DependencyInjection` 10.0.14; Routes -> `AarxMaps.Core` 1.0.0.
+  - DLLs: `AssemblyVersion` 1.0.0.0, informational version `1.0.0+<commit>`.
+  - README: no relative links, no images, no HTML (checked in R5).
+- **Findings (both fixed 2026-11-01 at the user's request):**
+  1. **Minor:** a standalone `dotnet pack` on a clean tree fails with NU5026 (DLL not found). With `GeneratePackageOnBuild=true`, NuGet's `Pack` target no longer depends on `Build` (`NuGet.Build.Tasks.Pack.targets`), because the build is expected to pack. CI is unaffected (build, then `pack --no-build`). Fix: drop `GeneratePackageOnBuild` from `Directory.Build.props`. Builds then stop writing packages, `dotnet pack` works on its own, and CI still works unchanged. **Fixed:** removed. Verified: builds write no packages, a standalone `dotnet pack -c Release` on a clean tree produces all six files, and the CI sequence (restore, build, test, `pack --no-build`) still gives 0 warnings, 1,284 tests and six files.
+  2. **Nit:** Places declares `Microsoft.Extensions.DependencyInjection` directly and Routes doesn't; both get it through Core. Drop the Places reference for consistency, or leave it. **Fixed:** removed from `AarxMaps.Places.csproj`. Places builds with 0 warnings (DI resolves transitively at 10.0.14), and its nuspec now depends only on `AarxMaps.Core` 1.0.0, like Routes.
+  - **R7 rerun on the fixed packages (2026-11-01):** same results: web and console apps compile with `-warnaserror`, the runtime console exits 0 with all four checks, `net8.0` still fails with NU1202, nothing in the global cache.
 
 ### R7. Smoke test from the packages (Claude)
 
@@ -117,13 +146,28 @@ Every check so far used `ProjectReference`. Here, put the R6 packages in a local
 
 Also try to install the packages into a `net8.0` app. The restore should fail with NU1202 (package not compatible). Quote the message in Coming from DelgadoMaps if it helps readers recognize it.
 
+- [x] **Result (2026-11-01):** local folder feed with package source mapping (`AarxMaps.*` -> local, everything else -> nuget.org) and an isolated `NUGET_PACKAGES` cache, so the local 1.0.0 never reaches the global cache (checked: it didn't).
+  - `dotnet add package AarxMaps.Places/Routes --version 1.0.0` works; `AarxMaps.Core` comes in transitively.
+  - Fresh `net10.0` web app with the README quick start: builds with `-warnaserror`, 0 warnings.
+  - Fresh `net10.0` console app with the Introduction's combined example (Places -> place ID -> Routes): builds with `-warnaserror`, 0 warnings.
+  - Runtime console (no network): resolves `IPlacesService` and `IRoutesService`, builds a text search and a route request, rejects `LatLng(91, 0)` with `MapsInvalidRequestException`, and rejects a missing API key with `OptionsValidationException` ("ApiKey must be provided."). Exit code 0.
+  - `net8.0` app: `error: NU1202: Package AarxMaps.Places 1.0.0 is not compatible with net8.0 (.NETCoreApp,Version=v8.0). Package AarxMaps.Places 1.0.0 supports: net10.0 (.NETCoreApp,Version=v10.0)`. Coming from DelgadoMaps already names NU1202, so no docs change.
+
 ### R8. nuget.org setup (user)
 
-- [ ] Recheck that the IDs are free.
-- [ ] Optional: request ID prefix reservation for `AarxMaps.*`. Packages then show a verified mark and nobody else can publish under the prefix.
-- [ ] Create an API key: push-only, glob `AarxMaps.*`, with an expiry. Store it as `NUGET_API_KEY` in the `nuget` environment (Settings -> Environments). A repo secret also works, since environment jobs see repo secrets.
-- [ ] Optional: add yourself as required reviewer on the `nuget` environment, so a pushed tag waits for approval before anything is published. GitHub creates the environment on the first run if it doesn't exist, but without protection rules.
-- [ ] Recheck `PROGRESS.md` Known flaws against the Known limitations page.
+- [x] Recheck that the IDs are free. Checked 2026-11-02 (Claude): `AarxMaps.Core`, `.Places`, `.Routes` return 404 on the flat container and 0 search hits. `D3lg4doMaps.*` is owned by the `JSebas-11` account. A profile named `Aarexus` exists on nuget.org with no packages; the user confirms whether it's theirs before choosing the package owner.
+- **Package owner: the `Aarexus` nuget.org organization (user, 2026-11-02).** The user owns it and is a member through the `JSebas-11` account.
+- [x] Request ID prefix reservation for `AarxMaps.*` (user wants it). Email sent by the user 2026-11-02; waiting for nuget.org's answer. Email `account@nuget.org` from the owner side with the owner display name (`Aarexus`) and the prefix. Packages then show a verified mark and nobody else can publish under the prefix; existing packages owned by `Aarexus` get the mark too, so it doesn't block the release.
+- [x] **Trusted publishing policy instead of an API key** (nuget.org recommends it; no long-lived secret). Logged in as `JSebas-11`: username menu -> Trusted Publishing -> add policy:
+  - Package owner `Aarexus`, repository owner `Aarexus`, repository `AarxMaps`, workflow file `publish.yml` (file name only), environment `nuget`.
+  - Scope: push new packages and new versions, glob `AarxMaps.*`, if the form offers scopes.
+  - If the policy shows as temporarily active (7 days), publish within that window or restart it; the first successful publish makes it permanent.
+- [x] `publish.yml` switched to trusted publishing (Claude, 2026-11-02): `id-token: write` next to `contents: read`, a `NuGet/login@v1` step (`user: JSebas-11`, the account that creates the policy) right before the push, and the push uses its `NUGET_API_KEY` output (valid 1 hour). No `NUGET_API_KEY` secret anymore. Parses as YAML; the OIDC exchange can only be tested by the release run. Known issue NuGet/login#6 (401 with reusable workflows) doesn't apply: `publish.yml` isn't reusable.
+- [x] GitHub environment `nuget` (Settings -> Environments): required reviewer = the user, "Prevent self-review" off, deployment tag rule `v*.*.*`. No secrets needed. Delete any leftover repo-level `NUGET_API_KEY` secret from the D3lg4doMaps setup.
+  - Set up by the user 2026-11-02 (policy too). Checked by Claude through the public API: reviewer `JSebas-11`, self-review allowed: OK. **Tag rule is `v*.*.*.` (trailing dot), which `v1.0.0` doesn't match, so the release would be blocked: fix to `v*.*.*`.** There's also a `main` branch rule; not needed (the workflow only runs on tags) and it opens the environment to any workflow on `main`: remove it.
+  - Recheck 2026-11-02: `main` rule removed. The tag rule is still stored as `v*.*.*.` (raw API value, 7 characters); the trailing dot is easy to miss in the UI. User to delete it and retype `v*.*.*`.
+  - Fixed 2026-11-03: the only rule is the tag rule `v*.*.*` (raw API value), which matches `v1.0.0`. Reviewer `JSebas-11`, self-review allowed. Environment ready.
+- [x] Recheck `PROGRESS.md` Known flaws against the Known limitations page. Checked 2026-11-02 (Claude): all four flaws are on the page with matching scope and workarounds (language/region, internal setters, Routes `null` handling, sliding expiration). The page also lists items missing from `PROGRESS.md` (retries, timeout exception, cache key without language, request options); they come from `DOC-PLAN.md` and get merged in R10. No doc change.
 
 ### R9. Release (user)
 
@@ -149,10 +193,22 @@ Also try to install the packages into a `net8.0` app. The restore should fail wi
   - **Supersedes** the same-day decision to use per-TFM `Microsoft.Extensions` versions (8.0.x for `net8.0`, 9.0.x for `net9.0`), and the `Dotnet 10 target` stash, which added `net10.0` next to the old targets.
 - **`Directory.Build.props` scope (2026-10-31).** Shared settings (TFM, nullable, implicit usings) apply to every project. Packaging, XML docs and analyzer settings are conditioned on `'$(MSBuildProjectName)' != 'AarxMaps.Tests'`. `IsPackable` can't be the condition, because the props file is evaluated before the csproj sets it.
 - **Release notes and version are hardcoded per release (2026-10-31).** `PackageReleaseNotes` names v1.0.0 explicitly. Each release updates `Version` and `PackageReleaseNotes` together in `Directory.Build.props`.
-- **Publish job runs in a `nuget` environment (2026-10-31).** Lets the user add a required reviewer and scope the API key to that job. Harmless if left unconfigured.
+- **Publish job runs in a `nuget` environment (2026-10-31).** Lets the user add a required reviewer; the trusted publishing policy is also bound to it. Harmless if left unconfigured.
+- **Trusted publishing, no API key (user, 2026-11-02).** nuget.org exchanges the workflow's GitHub OIDC token for a one-hour key, bound to the `Aarexus/AarxMaps` repo, `publish.yml` and the `nuget` environment. Nothing to store, rotate or leak. Supersedes the R8 API key plan.
+- **Packages owned by the `Aarexus` organization (user, 2026-11-02),** not the personal `JSebas-11` account that owns `D3lg4doMaps.*`. Matches the package author.
+- **`trailingSlash: true` on the docs site (2026-11-01).** Removes the GitHub Pages 301 on every page. `true` instead of `false` because it keeps the `index.html` layout, so both `/path` (redirect) and `/path/` work; with `false`, a link with a trailing slash would 404 on Pages.
+- **No `GeneratePackageOnBuild` (user, 2026-11-01).** Packing is `dotnet pack`'s job; builds stay fast and don't write packages.
+- **Modules reference only Core (user, 2026-11-01).** Places and Routes get `Microsoft.Extensions.*` through Core, so the dependency versions are set in one csproj.
 - **Smoke test from packages, not projects (2026-10-31).** Every earlier check used `ProjectReference`. R7 installs the packed `.nupkg` files from a local folder into fresh apps, because only that catches packaging mistakes.
 
 ## Lessons learned
+
+- **Check environment rules through the API, not by eye (2026-11-02).** `GET /repos/<owner>/<repo>/environments/<name>/deployment-branch-policies` is public for public repos and showed a tag rule with a stray trailing dot that would have blocked the release.
+
+- **`GeneratePackageOnBuild` changes what `dotnet pack` does (2026-11-01).** With it on, `Pack` skips `Build`, so `dotnet pack` on a clean tree fails with NU5026. Earlier checks passed only because `bin/` already held a build.
+- **Isolate the NuGet cache when smoke testing a local feed (2026-11-01).** A locally packed 1.0.0 in `~/.nuget/packages` would be reused later instead of the nuget.org 1.0.0 (same ID and version), hiding problems in the published package. Set `NUGET_PACKAGES` to a scratch folder.
+
+- **Set `trailingSlash` explicitly for Docusaurus on GitHub Pages (2026-11-01).** Left unset, the site builds and works, but every canonical/sitemap URL costs a 301. `npm run build` and `npm run serve` don't show it; only requests against the live host do.
 
 - **Check action versions and runtime support when touching workflows (2026-10-31).** The plan said `docs.yml` needed no changes, but it ran on Node 20 (end of life) with actions three majors behind. The GitHub releases API (`/repos/<owner>/<action>/releases/latest`) and Node's `schedule.json` answer both in seconds.
 

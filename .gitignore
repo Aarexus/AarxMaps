@@ -28,6 +28,11 @@ yarn-error.log*
 bin/
 obj/
 
+# Local `dotnet pack -o ./nupkgs` output
+nupkgs/
+*.nupkg
+*.snupkg
+
 *.user
 *.suo
 *.userosscache
