@@ -1,6 +1,8 @@
 # AarxMaps - Documentation Plan
 
-Last updated: 2026-10-30
+Last updated: 2026-11-04
+
+**Complete (2026-11-04).** The site is live at `https://aarexus.github.io/AarxMaps/` and its decisions and lessons are merged into `PROGRESS.md`. This file stays as the detailed record (structure, writing rules, branding, verification).
 
 Plan for the Docusaurus site under `docs/`, which replaces the site inherited from D3lg4doMaps. This file is self-contained: the docs work will happen on a different machine, so everything needed to resume is written here. Phase 4 in `PROGRESS.md` points here. Once the site is live, this file's decisions get merged into `PROGRESS.md`.
 

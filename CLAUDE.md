@@ -1,6 +1,6 @@
 # AarxMaps
 
-Strongly typed .NET SDK for Google Maps Platform, shipped as three NuGet packages: `AarxMaps.Core`, `AarxMaps.Places`, `AarxMaps.Routes`. Formerly published as `D3lg4doMaps` / `DelgadoMaps`; the codebase is being refactored package by package under the new name.
+Strongly typed .NET SDK for Google Maps Platform, shipped as three NuGet packages: `AarxMaps.Core`, `AarxMaps.Places`, `AarxMaps.Routes`. Formerly published as `D3lg4doMaps` / `DelgadoMaps` (now deprecated on nuget.org, pointing to AarxMaps).
 
 **Read `PROGRESS.md` at the start of every session.** It holds current status, next steps, critical decisions and lessons learned. Update it at the end of any session that changes status or makes a decision.
 
@@ -8,7 +8,7 @@ Strongly typed .NET SDK for Google Maps Platform, shipped as three NuGet package
 
 The user writes the code; Claude reviews it. The unit of work is a whole workflow or module (for example, all of Places Autocomplete: builders, request models, services, DTOs, mappers, DI, tests).
 
-- **Do not write or edit code unless the user explicitly asks.** That covers source, tests and snippets. Reviews describe the problem and the fix in words, pointing to `file:line`. Doc files (`CLAUDE.md`, `PROGRESS.md`, `DOC-PLAN.md`, `RELEASE-PLAN.md`) are the exception and stay up to date. The 1.0.0 release is tracked step by step in `RELEASE-PLAN.md`. The Docusaurus site under `docs/` is also written by Claude and read by the user (plan in `DOC-PLAN.md`).
+- **Do not write or edit code unless the user explicitly asks.** That covers source, tests and snippets. Reviews describe the problem and the fix in words, pointing to `file:line`. Doc files (`CLAUDE.md`, `PROGRESS.md`) are the exception and stay up to date. The Docusaurus site under `docs/` is also written by Claude and read by the user. `DOC-PLAN.md` and `RELEASE-PLAN.md` are the completed records of the docs site and the 1.0.0 release; read them only for history.
 - **Read the whole workflow before judging it.** Follow the call path end to end: builder -> request model -> service -> `IMapsApiClient` -> DTO -> mapper -> public model, plus DI registration and tests.
 - **Check against:**
   - Correctness: logic bugs, edge cases, null handling, coordinate order, field masks, payload shape compared with Google's API docs.
@@ -25,7 +25,7 @@ The user writes the code; Claude reviews it. The unit of work is a whole workflo
 
 ## Status snapshot
 
-- 1.0.0 is unpublished. The public API can still change freely; no migration notes needed until release.
+- **1.0.0 is published** (2026-11-04) on nuget.org, owned by the `Aarexus` organization (reserved prefix `AarxMaps`). Public API changes now follow semantic versioning: additive changes in a minor release, breaking changes only in a planned major release with migration notes on the docs site. Flag any change to a public type, member or behavior as one or the other in reviews.
 - The docs site (`docs/`, live at `https://aarexus.github.io/AarxMaps/`) is the source of truth for usage. The README is a short landing page (requirements, install, quick start, links to every site page) packed into every package, so it uses absolute links and no HTML.
 
 ## Commands
@@ -37,6 +37,10 @@ dotnet test AarxMaps.Tests                     # all tests
 dotnet test AarxMaps.Tests --filter "Package=Core"
 dotnet test AarxMaps.Tests --filter "Package=Core&Module=Http"
 dotnet pack -c Release -o ./nupkgs            # .nupkg + .snupkg for Core, Places, Routes
+
+# docs site
+python3 -I docs/scripts/compile-snippets.py    # compiles every csharp block on the site (warnings as errors)
+(cd docs && npm run build)                     # broken links fail the build
 ```
 
 Builds don't produce packages; `dotnet pack` builds and packs (CI runs `pack --no-build` after its build).
@@ -131,6 +135,12 @@ Follows the existing code; match it.
 - `.github/workflows/publish.yml`: on tag `v*.*.*` -> restore, fail if the tag isn't `v` + `Version`, build Release, test, pack, push all packages and symbols to nuget.org. Authenticates with nuget.org trusted publishing (`NuGet/login`, OIDC, no stored API key; policy owned by the `Aarexus` org, `user: JSebas-11`). Runs in the `nuget` GitHub environment with `contents: read` + `id-token: write`. `Version` and `PackageReleaseNotes` live once in `Directory.Build.props`; update both before tagging. Packages ship a `.snupkg` with SourceLink; `ContinuousIntegrationBuild` is on when `GITHUB_ACTIONS` is `true`.
 - `.github/workflows/docs.yml`: builds a Docusaurus site from `docs/` (Node 24) and deploys to GitHub Pages on push to `main` when `docs/**` or the workflow changes.
 - All packages pack the root `README.md` as their NuGet readme.
+- **Releasing a new version:**
+  1. Update `Version` and `PackageReleaseNotes` in `Directory.Build.props`, plus the docs and README if the API changed. Merge to `main` by PR.
+  2. Before tagging: `dotnet pack`, then install the packages from a local folder feed into a fresh app with an isolated `NUGET_PACKAGES` and build the quick start.
+  3. GitHub -> Releases -> Draft a new release, new tag `vX.Y.Z` on `main`, release label None. Publishing it creates the tag and starts `publish.yml`.
+  4. Approve the `nuget` environment in the run (Review deployments). If the run sits in Queued, check githubstatus.com; don't cancel or retag.
+  5. A failed run publishes nothing before its last step; fix and use Re-run failed jobs. Indexing on nuget.org can take hours after the push.
 
 ## Git workflow
 

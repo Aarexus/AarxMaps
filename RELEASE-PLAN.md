@@ -1,6 +1,8 @@
 # AarxMaps - Release Plan
 
-Last updated: 2026-10-31
+Last updated: 2026-11-04
+
+**Complete (2026-11-04): AarxMaps 1.0.0 is published.** This file is now the step-by-step record of the release; its decisions and lessons are merged into `PROGRESS.md`, and the process for future releases is in `CLAUDE.md` (CI / release).
 
 Plan for taking AarxMaps from "docs done" to 1.0.0 on nuget.org. It replaces `DOC-PLAN.md` Work steps 10 and 11 (deploy the site, README trim, package checks) and adds the steps they were missing. Each step says who does it. The user owns git, GitHub and nuget.org. Changes to csproj and workflow files are code, so the user makes them (or asks Claude to), and Claude reviews them.
 
@@ -17,9 +19,9 @@ Read order in a new session: `CLAUDE.md` -> `PROGRESS.md` -> this file. `DOC-PLA
 - **R5 done (2026-11-01):** README trimmed from 682 to 107 lines; the user read it and approved it.
 - **R6 and R7 done (2026-11-01):** packages inspected and installed from a local feed into fresh apps; all checks pass. Both R6 findings fixed at the user's request, and R7 rerun on the new packages.
 - **Release order agreed (2026-11-01):** R6-R8 don't change the repo, so they run on the working tree first. Then one final commit and PR to `main` with everything (README, `trailingSlash`, tracking, any fixes), then R9 tags that commit. R10's tracking updates are a separate commit after the release.
-- **R8 done (2026-11-03):** trusted publishing policy and `nuget` environment set up and checked, prefix reservation requested (pending at nuget.org).
-- **Next:** final commit and PR to `main` (everything since R4), then Claude checks the redeployed site, then R9.
+- **R8 done (2026-11-03):** trusted publishing policy and `nuget` environment set up and checked, prefix `AarxMaps` reserved for `Aarexus` (granted 2026-11-03).
 - **Blocked:** nothing.
+- **R9 and R10 done (2026-11-04):** released and checked. Nothing left.
 
 ## Steps
 
@@ -107,7 +109,7 @@ Was Work step 10.
   - Unknown URLs return 404 with the site's "Page Not Found" page.
   - All 43 external links checked: 42 return 200; LinkedIn returns 999, its standard answer to automated requests (not broken).
   - The Node 24 docs build passed on CI (first `docs.yml` run).
-  - **Finding, fixed:** every docs URL answered 301. Docusaurus emits `<path>/index.html`, GitHub Pages redirects `/<path>` to `/<path>/`, and with `trailingSlash` unset the sitemap, canonical and `og:url` all used the no-slash form. `docs/docusaurus.config.ts` now sets `trailingSlash: true`; the rebuilt site uses `/` everywhere and the output paths are unchanged. Deploys with the R5 PR.
+  - **Finding, fixed:** every docs URL answered 301. Docusaurus emits `<path>/index.html`, GitHub Pages redirects `/<path>` to `/<path>/`, and with `trailingSlash` unset the sitemap, canonical and `og:url` all used the no-slash form. `docs/docusaurus.config.ts` now sets `trailingSlash: true`; the rebuilt site uses `/` everywhere and the output paths are unchanged. Deploys with the R5 PR. **Live 2026-11-04:** pages answer 200 directly, canonical and all sitemap URLs end in `/`.
 
 ### R5. Trim the README (Claude, user reads)
 
@@ -157,7 +159,7 @@ Also try to install the packages into a `net8.0` app. The restore should fail wi
 
 - [x] Recheck that the IDs are free. Checked 2026-11-02 (Claude): `AarxMaps.Core`, `.Places`, `.Routes` return 404 on the flat container and 0 search hits. `D3lg4doMaps.*` is owned by the `JSebas-11` account. A profile named `Aarexus` exists on nuget.org with no packages; the user confirms whether it's theirs before choosing the package owner.
 - **Package owner: the `Aarexus` nuget.org organization (user, 2026-11-02).** The user owns it and is a member through the `JSebas-11` account.
-- [x] Request ID prefix reservation for `AarxMaps.*` (user wants it). Email sent by the user 2026-11-02; waiting for nuget.org's answer. Email `account@nuget.org` from the owner side with the owner display name (`Aarexus`) and the prefix. Packages then show a verified mark and nobody else can publish under the prefix; existing packages owned by `Aarexus` get the mark too, so it doesn't block the release.
+- [x] Request ID prefix reservation for `AarxMaps.*` (user wants it). Email sent by the user 2026-11-02. **Granted 2026-11-03:** nuget.org reserved the prefix `AarxMaps` (no dot, so it covers every ID starting with `AarxMaps`) for the `Aarexus` account. The verified mark shows once the packages are published; check it in R10. Email `account@nuget.org` from the owner side with the owner display name (`Aarexus`) and the prefix. Packages then show a verified mark and nobody else can publish under the prefix; existing packages owned by `Aarexus` get the mark too, so it doesn't block the release.
 - [x] **Trusted publishing policy instead of an API key** (nuget.org recommends it; no long-lived secret). Logged in as `JSebas-11`: username menu -> Trusted Publishing -> add policy:
   - Package owner `Aarexus`, repository owner `Aarexus`, repository `AarxMaps`, workflow file `publish.yml` (file name only), environment `nuget`.
   - Scope: push new packages and new versions, glob `AarxMaps.*`, if the form offers scopes.
@@ -171,14 +173,21 @@ Also try to install the packages into a `net8.0` app. The restore should fail wi
 
 ### R9. Release (user)
 
-- [ ] On `main`, tag `v1.0.0` and push the tag. `publish.yml` builds, tests, packs and pushes.
-- [ ] Create a GitHub Release for the tag with short notes: what AarxMaps is, that it needs .NET 10, and links to the docs and to "Coming from DelgadoMaps".
+- [x] On `main`, tag `v1.0.0` and push the tag. `publish.yml` builds, tests, packs and pushes.
+- [x] Create a GitHub Release for the tag with short notes: what AarxMaps is, that it needs .NET 10, and links to the docs and to "Coming from DelgadoMaps".
+- **Result (2026-11-04):** GitHub Release `AarxMaps 1.0.0` created with a new tag `v1.0.0` on `807f454` (`main`, PR #5); release label None, so it's Latest. Run 41864727655 queued for a while (GitHub Actions incident, "degraded availability"), then waited for review; the user approved the `nuget` environment. All ten steps green, including the tag check and the trusted publishing login. Packages were downloadable within minutes; search and registration indexing took a few hours.
 
 ### R10. After release (user, then Claude)
 
-- [ ] **Claude:** check the three nuget.org pages (README, icon, dependencies, symbols, license, `net10.0` shown as the target). Install 1.0.0 from nuget.org in a fresh app and build the Quick start.
-- [ ] **User:** deprecate the `D3lg4doMaps.*` packages on nuget.org (reason "Other", alternate package `AarxMaps.*`). Users of the old IDs then see where to go.
-- [ ] **Claude:** close out the docs:
+- [x] **Claude:** check the three nuget.org pages (README, icon, dependencies, symbols, license, `net10.0` shown as the target). Install 1.0.0 from nuget.org in a fresh app and build the Quick start.
+  - **Result (2026-11-04):** all three listed at 1.0.0, owner `Aarexus`, **verified** (reserved prefix), author Aarexus Software, MIT, project URL = docs site, one `net10.0` dependency group (Core -> four `Microsoft.Extensions.*` >= 10.0.14; Places and Routes -> `AarxMaps.Core` >= 1.0.0).
+  - Icons are the repo's 128x128 `icon.png`, byte for byte. The README renders on nuget.org with all six sections, the packages table, three code blocks, 25 docs-site links and no relative links.
+  - Symbols: each `.snupkg` downloads from nuget.org; its PDB has no local paths and SourceLink maps `/_/*` to `raw.githubusercontent.com/Aarexus/AarxMaps/807f454.../*`, the release commit.
+  - Fresh apps with nuget.org as the only source and an isolated cache: `dotnet add package` without a version resolves 1.0.0; the README quick start (web) and the Introduction example (console) build with `-warnaserror`, 0 warnings; the runtime console exits 0 (services resolve, requests build, invalid latitude and missing API key rejected). Nothing reached the global cache.
+- [x] **User:** deprecate the `D3lg4doMaps.*` packages on nuget.org, **after** AarxMaps is live: the alternate package must already exist on nuget.org. Logged in as `JSebas-11` (their owner), Manage package -> Deprecation, all versions, reason "Legacy", alternate `D3lg4doMaps.Core` -> `AarxMaps.Core`, `.Places` -> `AarxMaps.Places`, `.Routes` -> `AarxMaps.Routes` (no specific version), custom message pointing to the Coming from DelgadoMaps page and the .NET 10 requirement. Users of the old IDs then get a warning with the replacement in Visual Studio, `dotnet list package --deprecated` and nuget.org.
+  - **Done 2026-11-04, checked by Claude in the registration data:** all 14 versions (Core 5, Places 5, Routes 4) deprecated as Legacy, with the matching AarxMaps alternate and the custom message.
+  - **Deprecate, don't unlist (2026-11-03).** Unlisting only hides a package from search: existing projects still restore it, nobody gets a pointer to AarxMaps, and it would hide the deprecation notice from searchers. Unlist later only if wanted, and only after deprecating.
+- [x] **Claude:** close out the docs (2026-11-04):
   - Merge the decisions and lessons of `DOC-PLAN.md` (as its header says) and of this file into `PROGRESS.md`.
   - Mark Phase 4 done.
   - Update `CLAUDE.md`'s status snapshot: 1.0.0 is published, so public API changes now need a planned breaking release and migration notes.
